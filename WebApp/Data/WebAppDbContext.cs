@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-namespace WebApp.Data;
 
-public class WebAppDbContext : DbContext
+namespace WebApp.Data
 {
-    public WebAppDbContext(DbContextOptions<WebAppDbContext> options)
-        : base(options)
+    public class WebAppDbContext(DbContextOptions<WebAppDbContext> options) : DbContext(options)
     {
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+        }
     }
 }

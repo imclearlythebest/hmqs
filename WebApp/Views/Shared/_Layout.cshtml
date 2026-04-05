@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <link rel="icon" type="image/svg+xml" href="/images/favicon/music-solid-full.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/css/pico.pink.css">
+    <link rel="stylesheet" href="/css/style.css" asp-append-version="true">
+    @RenderSection("Styles", required: false)
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <title>@ViewData["Title"] - HMQS</title>
+  </head>
+
+  <body>
+    <header>
+      <partial name="_Navbar" />
+    </header>
+    <aside>
+      <partial name="_Sidebar" />
+    </aside>
+    <main>
+      @RenderBody()
+    </main>
+    <footer>
+      <partial name="_Player" />
+    </footer>
+    <script src="/js/script.js"></script>
+    @RenderSection("Scripts", required: false)
+  </body>
+
+</html>

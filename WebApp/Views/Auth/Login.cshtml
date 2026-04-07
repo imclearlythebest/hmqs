@@ -1,0 +1,24 @@
+@model LoginDto
+@{
+  ViewData["Title"] = "Login";
+}
+
+@section Styles {
+  <style>
+    body > main {
+      padding: 2rem 10rem 0rem 10rem;
+    }
+  </style>
+}
+
+<form asp-action="Login" asp-controller="Auth" method="post">
+  <fieldset>
+    <h3>Login</h3>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+    <button type="submit">Login</button>
+    <div asp-validation-summary="All"></div>
+  </fieldset>
+</form>

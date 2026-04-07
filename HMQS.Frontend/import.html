@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMQS - Import from Spotify</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        charcoal: "#1a1a1a",
+                        matte: "#2a2a2a",
+                        platinum: "#e5e4e2",
+                        silver: "#c0c0c0",
+                        accent: "#6c63ff"
+                    },
+                    fontFamily: { inter: ["Inter", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-charcoal font-inter min-h-screen">
+
+    <nav class="bg-matte border-b border-white border-opacity-5 px-6 py-4 flex items-center justify-between">
+        <a href="dashboard.html" class="text-platinum font-semibold tracking-tight">HMQS</a>
+        <div class="flex items-center gap-4">
+            <span id="usernameDisplay" class="text-silver text-sm"></span>
+            <button onclick="logout()" class="text-silver text-sm hover:text-platinum transition">Sign out</button>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-6 py-12">
+
+        <div class="mb-8">
+            <h2 class="text-platinum text-2xl font-medium">Import from Spotify</h2>
+            <p class="text-silver text-sm mt-2">
+                Paste your Spotify track names below. One track per line.
+                HMQS will try to match them against your local library.
+            </p>
+        </div>
+
+        <!-- How to get your Spotify tracks -->
+        <div class="bg-matte rounded-xl p-5 border border-white border-opacity-5 mb-6">
+            <p class="text-platinum text-sm font-medium mb-2">How to export your Spotify tracks</p>
+            <ol class="text-silver text-xs space-y-1 list-decimal list-inside">
+                <li>Open Spotify and go to any playlist</li>
+                <li>Select all tracks (Ctrl + A)</li>
+                <li>Copy the track names manually or use a tool like Exportify</li>
+                <li>Paste them below, one track name per line</li>
+            </ol>
+        </div>
+
+        <!-- Import Form -->
+        <div class="bg-matte rounded-xl p-6 border border-white border-opacity-5 mb-6">
+
+            <div id="importError"
+                class="hidden bg-red-900 bg-opacity-40 border border-red-500 border-opacity-40 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
+                <span id="importErrorText"></span>
+            </div>
+
+            <label class="text-silver text-sm block mb-2">Track names (one per line)</label>
+            <textarea id="trackInput" rows="10"
+                placeholder="Billie Jean&#10;Bohemian Rhapsody&#10;Style&#10;Blinding Lights"
+                class="w-full bg-charcoal text-platinum placeholder-gray-600 border border-white border-opacity-10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accent focus:border-opacity-60 transition resize-none"></textarea>
+
+            <div class="flex items-center justify-between mt-4">
+                <span id="trackCount" class="text-gray-600 text-xs">0 tracks</span>
+                <button onclick="handleImport()" id="importBtn"
+                    class="bg-accent text-white text-sm px-6 py-2.5 rounded-lg hover:bg-opacity-90 transition disabled:opacity-50">
+                    Start Import
+                </button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsSection" class="hidden">
+
+            <!-- Summary cards -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-matte rounded-xl p-5 border border-white border-opacity-5 text-center">
+                    <p class="text-silver text-xs uppercase tracking-widest mb-1">Total</p>
+                    <p id="totalCount" class="text-platinum text-2xl font-semibold">0</p>
+                </div>
+                <div class="bg-matte rounded-xl p-5 border border-white border-opacity-5 text-center">
+                    <p class="text-silver text-xs uppercase tracking-widest mb-1">Matched</p>
+                    <p id="matchedCount" class="text-green-400 text-2xl font-semibold">0</p>
+                </div>
+                <div class="bg-matte rounded-xl p-5 border border-white border-opacity-5 text-center">
+                    <p class="text-silver text-xs uppercase tracking-widest mb-1">Not Found</p>
+                    <p id="notFoundCount" class="text-red-400 text-2xl font-semibold">0</p>
+                </div>
+            </div>
+
+            <!-- Track by track results -->
+            <div class="bg-matte rounded-xl border border-white border-opacity-5 overflow-hidden">
+                <div class="px-6 py-4 border-b border-white border-opacity-5">
+                    <h3 class="text-platinum text-sm font-medium">Import Results</h3>
+                </div>
+                <div id="resultsList" class="divide-y divide-white divide-opacity-5"></div>
+            </div>
+
+            <div class="mt-6 text-center">
+                <a href="dashboard.html" class="text-accent text-sm hover:underline">
+                    Back to dashboard
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        requireAuth();
+
+        const username = localStorage.getItem("username") || "User";
+        document.getElementById("usernameDisplay").textContent = username;
+
+        // Update track count as user types
+        document.getElementById("trackInput").addEventListener("input", function () {
+            const lines = this.value
+                .split("\n")
+                .filter(line => line.trim() !== "");
+            document.getElementById("trackCount").textContent = `${lines.length} tracks`;
+        });
+
+        async function handleImport() {
+            const input = document.getElementById("trackInput").value;
+            const importError = document.getElementById("importError");
+            const importErrorText = document.getElementById("importErrorText");
+            const importBtn = document.getElementById("importBtn");
+
+            importError.classList.add("hidden");
+
+            // Split by newline and clean up empty lines
+            const trackNames = input
+                .split("\n")
+                .map(line => line.trim())
+                .filter(line => line !== "");
+
+            if (trackNames.length === 0) {
+                importErrorText.textContent = "Please enter at least one track name.";
+                importError.classList.remove("hidden");
+                return;
+            }
+
+            importBtn.disabled = true;
+            importBtn.textContent = "Importing...";
+
+            try {
+                const summary = await importSpotifyTracks(trackNames);
+                showResults(summary);
+            } catch (err) {
+                importErrorText.textContent = err.message;
+                importError.classList.remove("hidden");
+            } finally {
+                importBtn.disabled = false;
+                importBtn.textContent = "Start Import";
+            }
+        }
+
+        function showResults(summary) {
+            // Show summary numbers
+            document.getElementById("totalCount").textContent = summary.totalTracks;
+            document.getElementById("matchedCount").textContent = summary.matchedCount;
+            document.getElementById("notFoundCount").textContent = summary.notFoundCount;
+
+            // Build the results list
+            const resultsList = document.getElementById("resultsList");
+            resultsList.innerHTML = summary.results.map(r => `
+                <div class="flex items-center justify-between px-6 py-3">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-platinum text-sm truncate">${escapeHtml(r.spotifyTrackName)}</p>
+                        ${r.matchedSongTitle
+                    ? `<p class="text-silver text-xs mt-0.5">Matched to: ${escapeHtml(r.matchedSongTitle)}</p>`
+                    : `<p class="text-gray-600 text-xs mt-0.5">Not in local library</p>`
+                }
+                    </div>
+                    <span class="ml-4 text-xs font-medium px-2 py-1 rounded-full ${r.status === 'Matched'
+                    ? 'bg-green-900 bg-opacity-40 text-green-400'
+                    : 'bg-red-900 bg-opacity-40 text-red-400'
+                }">
+                        ${r.status}
+                    </span>
+                </div>
+            `).join('');
+
+            document.getElementById("resultsSection").classList.remove("hidden");
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function logout() {
+            clearTokens();
+            window.location.href = "login.html";
+        }
+    </script>
+</body>
+
+</html>

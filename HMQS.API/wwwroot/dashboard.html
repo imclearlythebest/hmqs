@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMQS - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        charcoal: "#1a1a1a",
+                        matte: "#2a2a2a",
+                        platinum: "#e5e4e2",
+                        silver: "#c0c0c0",
+                        accent: "#6c63ff"
+                    },
+                    fontFamily: { inter: ["Inter", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-charcoal font-inter min-h-screen pb-32">
+
+    <nav class="bg-matte border-b border-white border-opacity-5 px-6 py-4 flex items-center justify-between">
+        <h1 class="text-platinum font-semibold tracking-tight">HMQS</h1>
+        <div class="flex items-center gap-4">
+            <a href="import.html" class="text-silver text-sm hover:text-platinum transition">Import from Spotify</a>
+            <span id="usernameDisplay" class="text-silver text-sm"></span>
+            <button onclick="logout()" class="text-silver text-sm hover:text-platinum transition">Sign out</button>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-6 py-12">
+
+        <div class="mb-10">
+            <h2 class="text-platinum text-2xl font-medium">
+                Welcome back, <span id="welcomeName" class="text-accent"></span>
+            </h2>
+            <p class="text-silver text-sm mt-2">Your local music library.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            <div class="bg-matte rounded-xl p-6 border border-white border-opacity-5">
+                <p class="text-silver text-xs uppercase tracking-widest mb-2">Local Songs</p>
+                <p id="songCount" class="text-platinum text-3xl font-semibold">...</p>
+            </div>
+            <a href="import.html"
+                class="bg-matte rounded-xl p-6 border border-white border-opacity-5 hover:border-accent hover:border-opacity-40 transition block">
+                <p class="text-silver text-xs uppercase tracking-widest mb-2">Imported Tracks</p>
+                <p id="importCount" class="text-platinum text-3xl font-semibold">...</p>
+            </a>
+            <div class="bg-matte rounded-xl p-6 border border-white border-opacity-5">
+                <p class="text-silver text-xs uppercase tracking-widest mb-2">Hours Listened</p>
+                <p class="text-platinum text-3xl font-semibold">0</p>
+            </div>
+        </div>
+
+        <!-- Add Song Form -->
+        <div class="bg-matte rounded-xl p-6 border border-white border-opacity-5 mb-6">
+            <h3 class="text-platinum text-sm font-medium mb-4">Add a Song</h3>
+            <div id="addError"
+                class="hidden bg-red-900 bg-opacity-40 border border-red-500 border-opacity-40 text-red-300 text-sm rounded-lg px-4 py-3 mb-4">
+                <span id="addErrorText"></span>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <!-- Row 1: Song title -->
+                <input type="text" id="songTitle" placeholder="Song title"
+                    class="w-full bg-charcoal text-platinum placeholder-gray-600 border border-white border-opacity-10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-accent focus:border-opacity-60 transition" />
+
+                <!-- Row 2: Full file path + Add button -->
+                <!-- The user must paste the full path here for streaming to work -->
+                <!-- Example: C:\Users\losta\Music\song.m4a -->
+                <div class="flex gap-3">
+                    <input type="text" id="songFullPath" placeholder="Full file path e.g. C:\Users\losta\Music\song.m4a"
+                        class="flex-1 bg-charcoal text-platinum placeholder-gray-600 border border-white border-opacity-10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-accent focus:border-opacity-60 transition" />
+                    <button onclick="handleAddSong()" id="addBtn"
+                        class="bg-accent text-white text-sm px-5 py-2.5 rounded-lg hover:bg-opacity-90 transition">
+                        Add
+                    </button>
+                </div>
+
+                <!-- Tip for getting the full path -->
+                <p class="text-gray-600 text-xs">
+                    Tip: In File Explorer, hold Shift + right-click your music file, then click "Copy as path". Paste it
+                    above.
+                </p>
+            </div>
+        </div>
+
+        <!-- Song Library -->
+        <div class="bg-matte rounded-xl border border-white border-opacity-5 overflow-hidden">
+            <div class="px-6 py-4 border-b border-white border-opacity-5">
+                <h3 class="text-platinum text-sm font-medium">Your Library</h3>
+            </div>
+            <div id="loadingState" class="px-6 py-10 text-center">
+                <p class="text-silver text-sm">Loading your library...</p>
+            </div>
+            <div id="emptyState" class="hidden px-6 py-10 text-center">
+                <p class="text-silver text-sm">No songs yet. Add your first song above.</p>
+            </div>
+            <div id="songList" class="hidden divide-y divide-white divide-opacity-5"></div>
+        </div>
+
+    </main>
+
+    <!-- Sticky Music Player -->
+    <div id="player"
+        class="hidden fixed bottom-0 left-0 right-0 bg-matte border-t border-white border-opacity-10 px-6 py-4 z-50">
+        <div class="max-w-4xl mx-auto flex items-center gap-4">
+
+            <img id="playerArt" src="" class="w-12 h-12 rounded object-cover shrink-0 hidden" />
+            <div id="playerArtPlaceholder" class="w-12 h-12 rounded bg-charcoal shrink-0"></div>
+
+            <div class="flex-1 min-w-0">
+                <p id="playerTitle" class="text-platinum text-sm font-medium truncate">No song selected</p>
+                <p id="playerArtist" class="text-silver text-xs truncate"></p>
+            </div>
+
+            <div class="flex flex-col items-center gap-1 flex-1">
+                <div class="flex items-center gap-4">
+                    <button onclick="playPrev()" class="text-silver hover:text-platinum transition">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+                        </svg>
+                    </button>
+                    <button onclick="togglePlay()" id="playBtn"
+                        class="w-9 h-9 bg-accent rounded-full flex items-center justify-center hover:bg-opacity-90 transition">
+                        <svg id="playIcon" class="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                        <svg id="pauseIcon" class="w-4 h-4 text-white hidden" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                        </svg>
+                    </button>
+                    <button onclick="playNext()" class="text-silver hover:text-platinum transition">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 18l8.5-6L6 6v12zm2.5-6l-2.5 6V6l2.5 6zm7-6h2v12h-2z" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 w-full max-w-sm">
+                    <span id="currentTime" class="text-gray-600 text-xs w-8 text-right">0:00</span>
+                    <div class="flex-1 h-1 bg-charcoal rounded-full cursor-pointer" onclick="seek(event, this)">
+                        <div id="progressBar" class="h-1 bg-accent rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span id="totalTime" class="text-gray-600 text-xs w-8">0:00</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <svg class="w-4 h-4 text-silver" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+                </svg>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1"
+                    oninput="setVolume(this.value)" class="w-20 accent-violet-500 cursor-pointer" />
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioEl" preload="metadata"></audio>
+
+    <script src="js/api.js"></script>
+    <script>
+        requireAuth();
+
+        const username = localStorage.getItem("username") || "User";
+        document.getElementById("usernameDisplay").textContent = username;
+        document.getElementById("welcomeName").textContent = username;
+
+        let playlist = [];
+        let currentIndex = -1;
+        const audio = document.getElementById("audioEl");
+
+        // ─── AUDIO EVENTS ─────────────────────────────────────────────────────
+
+        audio.addEventListener("timeupdate", () => {
+            if (!audio.duration) return;
+            const pct = (audio.currentTime / audio.duration) * 100;
+            document.getElementById("progressBar").style.width = `${pct}%`;
+            document.getElementById("currentTime").textContent = formatTime(audio.currentTime);
+        });
+
+        audio.addEventListener("loadedmetadata", () => {
+            document.getElementById("totalTime").textContent = formatTime(audio.duration);
+        });
+
+        audio.addEventListener("ended", () => playNext());
+
+        audio.addEventListener("play", () => {
+            document.getElementById("playIcon").classList.add("hidden");
+            document.getElementById("pauseIcon").classList.remove("hidden");
+        });
+
+        audio.addEventListener("pause", () => {
+            document.getElementById("playIcon").classList.remove("hidden");
+            document.getElementById("pauseIcon").classList.add("hidden");
+        });
+
+        audio.addEventListener("error", () => {
+            alert("Could not play this song. Make sure the file path is correct and the file exists.");
+        });
+
+        // ─── PLAYER CONTROLS ──────────────────────────────────────────────────
+
+        function playSong(index) {
+            if (index < 0 || index >= playlist.length) return;
+
+            const song = playlist[index];
+
+            // Only play songs that have a file path set
+            if (!song.filePath) {
+                alert(`"${song.title}" has no file path set.\n\nTo fix this, remove the song and re-add it with the full file path.\n\nExample: C:\\Users\\losta\\Music\\song.m4a`);
+                return;
+            }
+
+            currentIndex = index;
+            audio.src = getStreamUrl(song.id);
+            audio.play();
+
+            document.getElementById("playerTitle").textContent = song.title;
+            document.getElementById("playerArtist").textContent =
+                [song.artistName, song.albumTitle].filter(Boolean).join(" · ");
+
+            const art = document.getElementById("playerArt");
+            const artPlaceholder = document.getElementById("playerArtPlaceholder");
+
+            if (song.coverArtUrl) {
+                art.src = song.coverArtUrl;
+                art.classList.remove("hidden");
+                artPlaceholder.classList.add("hidden");
+            } else {
+                art.classList.add("hidden");
+                artPlaceholder.classList.remove("hidden");
+            }
+
+            document.getElementById("player").classList.remove("hidden");
+
+            document.querySelectorAll(".song-row").forEach(row => {
+                row.classList.remove("bg-white", "bg-opacity-5");
+            });
+            const activeRow = document.getElementById(`song-${song.id}`);
+            if (activeRow) activeRow.classList.add("bg-white", "bg-opacity-5");
+        }
+
+        function togglePlay() {
+            if (audio.paused) audio.play();
+            else audio.pause();
+        }
+
+        function playNext() {
+            // Find next song that has a file path
+            let next = currentIndex + 1;
+            while (next < playlist.length) {
+                if (playlist[next].filePath) { playSong(next); return; }
+                next++;
+            }
+        }
+
+        function playPrev() {
+            if (audio.currentTime > 3) {
+                audio.currentTime = 0;
+                return;
+            }
+            let prev = currentIndex - 1;
+            while (prev >= 0) {
+                if (playlist[prev].filePath) { playSong(prev); return; }
+                prev--;
+            }
+        }
+
+        function seek(event, bar) {
+            const rect = bar.getBoundingClientRect();
+            const pct = (event.clientX - rect.left) / rect.width;
+            audio.currentTime = pct * audio.duration;
+        }
+
+        function setVolume(val) {
+            audio.volume = parseFloat(val);
+        }
+
+        function formatTime(secs) {
+            if (!secs || isNaN(secs)) return "0:00";
+            const m = Math.floor(secs / 60);
+            const s = Math.floor(secs % 60).toString().padStart(2, "0");
+            return `${m}:${s}`;
+        }
+
+        // ─── LOAD SONGS ───────────────────────────────────────────────────────
+
+        async function loadSongs() {
+            try {
+                const songs = await getSongs();
+                playlist = songs;
+
+                document.getElementById("songCount").textContent = songs.length;
+
+                const loadingState = document.getElementById("loadingState");
+                const emptyState = document.getElementById("emptyState");
+                const songList = document.getElementById("songList");
+
+                loadingState.classList.add("hidden");
+
+                if (songs.length === 0) {
+                    emptyState.classList.remove("hidden");
+                    songList.classList.add("hidden");
+                    return;
+                }
+
+                emptyState.classList.add("hidden");
+                songList.classList.remove("hidden");
+
+                songList.innerHTML = songs.map((song, index) => `
+                    <div class="song-row px-6 py-4 hover:bg-white hover:bg-opacity-5 transition" id="song-${song.id}">
+                        <div class="flex items-center justify-between">
+
+                            <!-- Left: art + info -->
+                            <div class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onclick="playSong(${index})">
+                                ${song.coverArtUrl
+                        ? `<img src="${song.coverArtUrl}" class="w-10 h-10 rounded object-cover shrink-0" />`
+                        : `<div class="w-10 h-10 rounded bg-charcoal shrink-0 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                                        </svg>
+                                       </div>`
+                    }
+                                <div class="min-w-0">
+                                    <p class="text-platinum text-sm font-medium truncate">${escapeHtml(song.title)}</p>
+                                    <p class="text-silver text-xs mt-0.5">
+                                        ${song.artistName ? escapeHtml(song.artistName) + ' · ' : ''}
+                                        ${song.albumTitle ? escapeHtml(song.albumTitle) + ' · ' : ''}
+                                        ${song.durationFormatted || '--:--'}
+                                    </p>
+                                    ${!song.filePath
+                        ? `<p class="text-yellow-600 text-xs mt-0.5">No file path set</p>`
+                        : ''
+                    }
+                                </div>
+                            </div>
+
+                            <!-- Right: controls -->
+                            <div class="flex items-center gap-3 ml-4">
+                                ${song.filePath
+                        ? `<button onclick="playSong(${index})"
+                                        class="text-silver hover:text-accent transition" title="Play">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                       </button>`
+                        : `<span class="text-yellow-700 text-xs">No file</span>`
+                    }
+                                <button
+                                    onclick="openMetadataSearch(${song.id}, '${escapeHtml(song.title).replace(/'/g, "\\'")}')"
+                                    class="text-accent text-xs hover:underline transition">
+                                    Find Metadata
+                                </button>
+                                <button
+                                    onclick="handleDeleteSong(${song.id})"
+                                    class="text-gray-600 hover:text-red-400 text-xs transition">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Metadata panel -->
+                        <div id="meta-panel-${song.id}" class="hidden mt-4">
+                            <div class="flex gap-2 mb-3">
+                                <input type="text" id="meta-input-${song.id}"
+                                    value="${escapeHtml(song.title)}"
+                                    class="flex-1 bg-charcoal text-platinum border border-white border-opacity-10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-accent focus:border-opacity-60 transition" />
+                                <button onclick="handleMetadataSearch(${song.id})"
+                                    class="bg-accent text-white text-xs px-4 py-2 rounded-lg hover:bg-opacity-90 transition">
+                                    Search
+                                </button>
+                                <button onclick="closeMetadataPanel(${song.id})"
+                                    class="text-gray-600 text-xs px-3 py-2 hover:text-silver transition">
+                                    Cancel
+                                </button>
+                            </div>
+                            <div id="meta-results-${song.id}" class="space-y-2"></div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                document.getElementById("loadingState").innerHTML =
+                    `<p class="text-red-400 text-sm">${err.message}</p>`;
+            }
+        }
+
+        // ─── ADD SONG ─────────────────────────────────────────────────────────
+
+        async function handleAddSong() {
+            const title = document.getElementById("songTitle").value.trim();
+            const filePath = document.getElementById("songFullPath").value.trim();
+            const addError = document.getElementById("addError");
+            const addErrorText = document.getElementById("addErrorText");
+            const addBtn = document.getElementById("addBtn");
+
+            addError.classList.add("hidden");
+
+            if (!title) {
+                addErrorText.textContent = "Song title is required.";
+                addError.classList.remove("hidden");
+                return;
+            }
+
+            addBtn.disabled = true;
+            addBtn.textContent = "Adding...";
+
+            try {
+                await addSong({
+                    title,
+                    filePath: filePath || null
+                });
+                document.getElementById("songTitle").value = "";
+                document.getElementById("songFullPath").value = "";
+                await loadSongs();
+            } catch (err) {
+                addErrorText.textContent = err.message;
+                addError.classList.remove("hidden");
+            } finally {
+                addBtn.disabled = false;
+                addBtn.textContent = "Add";
+            }
+        }
+
+        // ─── DELETE SONG ──────────────────────────────────────────────────────
+
+        async function handleDeleteSong(id) {
+            if (!confirm("Remove this song from your library?")) return;
+            try {
+                await deleteSong(id);
+                const row = document.getElementById(`song-${id}`);
+                if (row) row.remove();
+                playlist = playlist.filter(s => s.id !== id);
+
+                const count = parseInt(document.getElementById("songCount").textContent);
+                document.getElementById("songCount").textContent = count - 1;
+
+                const songList = document.getElementById("songList");
+                if (songList.children.length === 0) {
+                    songList.classList.add("hidden");
+                    document.getElementById("emptyState").classList.remove("hidden");
+                }
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        // ─── METADATA SEARCH ──────────────────────────────────────────────────
+
+        function openMetadataSearch(songId, title) {
+            document.getElementById(`meta-panel-${songId}`).classList.remove("hidden");
+            document.getElementById(`meta-input-${songId}`).focus();
+        }
+
+        function closeMetadataPanel(songId) {
+            document.getElementById(`meta-panel-${songId}`).classList.add("hidden");
+            document.getElementById(`meta-results-${songId}`).innerHTML = "";
+        }
+
+        async function handleMetadataSearch(songId) {
+            const input = document.getElementById(`meta-input-${songId}`);
+            const resultsDiv = document.getElementById(`meta-results-${songId}`);
+            const query = input.value.trim();
+            if (!query) return;
+
+            resultsDiv.innerHTML = `<p class="text-silver text-xs">Searching iTunes...</p>`;
+
+            try {
+                const results = await searchMetadata(query);
+
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = `<p class="text-silver text-xs">No results found.</p>`;
+                    return;
+                }
+
+                resultsDiv.innerHTML = results.map(r => `
+                    <div class="bg-charcoal rounded-lg px-4 py-3 border border-white border-opacity-5">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3 flex-1 min-w-0">
+                                ${r.coverArtUrl
+                        ? `<img src="${r.coverArtUrl}" class="w-10 h-10 rounded object-cover shrink-0" />`
+                        : ''
+                    }
+                                <div>
+                                    <p class="text-platinum text-xs font-medium">${escapeHtml(r.title)}</p>
+                                    <p class="text-silver text-xs mt-0.5">
+                                        ${r.artistName ? escapeHtml(r.artistName) : 'Unknown Artist'}
+                                        ${r.albumTitle ? ' · ' + escapeHtml(r.albumTitle) : ''}
+                                        ${r.releaseYear ? ' · ' + r.releaseYear : ''}
+                                    </p>
+                                    <p class="text-gray-600 text-xs mt-0.5">Match score: ${r.score}%</p>
+                                </div>
+                            </div>
+                            <button
+                                onclick='handleApplyMetadata(${songId}, ${JSON.stringify(r)})'
+                                class="bg-accent text-white text-xs px-3 py-1.5 rounded-lg hover:bg-opacity-90 transition shrink-0">
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                resultsDiv.innerHTML = `<p class="text-red-400 text-xs">${err.message}</p>`;
+            }
+        }
+
+        async function handleApplyMetadata(songId, result) {
+            try {
+                await applyMetadata({
+                    songId: songId,
+                    musicBrainzId: result.musicBrainzId,
+                    title: result.title,
+                    artistName: result.artistName,
+                    albumTitle: result.albumTitle,
+                    releaseYear: result.releaseYear,
+                    coverArtUrl: result.coverArtUrl
+                });
+                closeMetadataPanel(songId);
+                await loadSongs();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        // ─── HELPERS ─────────────────────────────────────────────────────────
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function logout() {
+            clearTokens();
+            window.location.href = "login.html";
+        }
+
+        async function loadStats() {
+            try {
+                const importCount = await getImportCount();
+                document.getElementById("importCount").textContent = importCount;
+            } catch (err) {
+                document.getElementById("importCount").textContent = "0";
+            }
+        }
+
+        loadSongs();
+        loadStats();
+    </script>
+</body>
+
+</html>

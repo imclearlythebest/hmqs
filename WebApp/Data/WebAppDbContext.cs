@@ -6,6 +6,7 @@ namespace WebApp.Data
 {
     public class WebAppDbContext(DbContextOptions<WebAppDbContext> options) : IdentityDbContext<WebAppUser>(options)
     {
+        public DbSet<Scrobble> Scrobbles => Set<Scrobble>();
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
         }

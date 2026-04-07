@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using WebApp.Routes;
 using WebApp.Data;
+using WebApp.Models;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,14 @@ builder.Services.AddDbContext<WebAppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
     ));
+builder.Services.AddIdentity<WebAppUser, IdentityRole>()
+    .AddEntityFrameworkStores<WebAppDbContext>();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Auth/Login";
+    options.LogoutPath = "/Auth/Logout";
+    options.AccessDeniedPath = "/Auth/Denied";
+});
 
 var WebApp = builder.Build();
 
@@ -29,5 +39,6 @@ else
 WebApp.UseHttpsRedirection();
 WebApp.UseStaticFiles();
 WebApp.MapRoutes();
+WebApp.UseAuthentication();
 
 WebApp.Run();

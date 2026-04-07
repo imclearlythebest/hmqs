@@ -9,7 +9,14 @@
     </li>
   </ul>
   <ul>
-    <li><a href="#">Login</a></li>
-    <li><a href="#">Register</a></li> 
+  @if (User.Identity?.IsAuthenticated == true)
+  {
+    <partial name="_AvatarMenu" />
+  }
+  else
+  {
+    <li><a asp-controller="Auth" asp-action="Login">Login</a></li>
+    <li><a asp-controller="Auth" asp-action="Register">Register</a></li>
+  }
   </ul>
 </nav>

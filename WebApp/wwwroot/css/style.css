@@ -25,6 +25,7 @@ body>aside {
 body>main {
     grid-area: main;
     overflow-y: auto;
+    padding: 1rem;
 }
 
 body>footer {

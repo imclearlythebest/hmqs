@@ -1,0 +1,31 @@
+@model RegisterDto
+@{
+  ViewData["Title"] = "Register";
+}
+
+@section Styles {
+  <style>
+    body > main {
+      padding: 2rem 10rem 0rem 10rem;
+    }
+  </style>
+}
+
+<form asp-action="Editing MetaData" asp-controller="Auth" method="post">
+  <fieldset>
+    <h3>Register</h3>
+    <label for="trackTitle">Track Title:</label>
+    <input type="text" id="trackTitle" name="trackTitle" required>
+    <label for="artist">Artist:</label>
+    <input type="text" id="artist" name="artist" required>
+    <label for="album">Album:</label>
+    <input type="text" id="album" name="album" required>
+    <label for="genre">Genre:</label>
+    <input type="text" id="genre" name="genre" required>
+    <label for="image">Upload image</label>
+    <input type="file" id="imagel" name="image" required>
+
+    <button type="submit">Save Changes</button>
+    <div asp-validation-summary="All"></div>
+  </fieldset>
+</form>

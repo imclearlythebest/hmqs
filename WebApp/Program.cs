@@ -36,6 +36,13 @@ else
     WebApp.UseHsts();
 }
 
+using (var scope = WebApp.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<WebAppDbContext>();
+    db.Database.EnsureDeleted();
+    db.Database.EnsureCreated();
+}
+
 WebApp.UseHttpsRedirection();
 WebApp.UseStaticFiles();
 WebApp.MapRoutes();

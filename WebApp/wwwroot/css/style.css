@@ -56,6 +56,15 @@ body.hmqs-body {
     cursor: pointer;
 }
 
+.hmqs-dragging-row {
+    opacity: 0.55;
+}
+
+.hmqs-drag-over-row {
+    outline: 2px dashed color-mix(in srgb, var(--bs-primary) 45%, transparent);
+    outline-offset: -2px;
+}
+
 .hmqs-track-cover,
 .hmqs-player-cover {
     width: 2rem;

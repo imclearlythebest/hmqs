@@ -18,8 +18,16 @@
                 <span class="text-body-secondary small" x-text="loading ? 'Refreshing...' : `${files.length} track(s)`"></span>
             </div>
 
-            <div class="alert alert-secondary py-2" x-show="selectedPlaylist">
-                Showing playlist: <strong x-text="selectedPlaylist"></strong>
+            <div class="alert alert-secondary py-2 d-flex justify-content-between align-items-center" x-show="selectedPlaylist">
+                <span>Showing playlist: <strong x-text="selectedPlaylist"></strong></span>
+                <button type="button"
+                        class="btn btn-sm"
+                        :class="reorderMode ? 'btn-primary' : 'btn-outline-secondary'"
+                        x-on:click="toggleReorderMode()"
+                        :title="reorderMode ? 'Exit reorder mode' : 'Reorder tracks'">
+                    <i class="fa-solid fa-grip-vertical me-1"></i>
+                    <span x-text="reorderMode ? 'Done' : 'Reorder'"></span>
+                </button>
             </div>
 
             <div class="alert alert-info mb-3" x-show="loading">Loading music files...</div>
@@ -35,10 +43,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="file in files" :key="file.name">
-                            <tr class="hmqs-track-row" x-on:click="playFile(file.name)">
+                        <template x-for="(file, index) in files" :key="`${file.name}-${index}`">
+                            <tr class="hmqs-track-row"
+                                :class="rowDragClass(index)"
+                                :draggable="!!selectedPlaylist && reorderMode"
+                                x-on:click="playFile(file.name)"
+                                x-on:dragstart="startDrag(index)"
+                                x-on:dragover.prevent="setDragOver(index)"
+                                x-on:drop.prevent="dropDrag(index)"
+                                x-on:dragend="endDrag()">
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
+                                        <span class="text-body-secondary" x-show="selectedPlaylist && reorderMode" title="Drag to reorder">
+                                            <i class="fa-solid fa-grip-vertical"></i>
+                                        </span>
                                         <div class="hmqs-track-cover">
                                             <img x-show="file.imageUrl" :src="file.imageUrl" alt="Track cover" loading="lazy">
                                             <div class="hmqs-cover-placeholder" x-show="!file.imageUrl" aria-hidden="true">
@@ -69,7 +87,7 @@
                                         <button x-show="!selectedPlaylist" x-on:click="openAddToPlaylistModal(file.name)" class="btn btn-sm btn-link hmqs-icon-btn" title="Add to playlist">
                                             <i class="fa-solid fa-circle-plus"></i>
                                         </button>
-                                        <button x-show="selectedPlaylist" x-on:click="removeFromPlaylist(file.name)" class="btn btn-sm btn-link hmqs-icon-btn hmqs-icon-btn-danger" title="Remove from playlist">
+                                        <button x-show="selectedPlaylist" x-on:click="removeFromPlaylist(file.name, index)" class="btn btn-sm btn-link hmqs-icon-btn hmqs-icon-btn-danger" title="Remove from playlist">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>

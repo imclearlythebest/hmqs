@@ -38,6 +38,9 @@
             pendingPlaylistFile: null,
             addingToPlaylist: false,
             playlistModal: null,
+            dragIndex: null,
+            dragOverIndex: null,
+            reorderMode: false,
 
             async init() {
                 await this.loadFiles();
@@ -50,6 +53,7 @@
                 });
                 window.addEventListener('playlist-selected', async e => {
                     this.selectedPlaylist = e.detail?.playlist || null;
+                    this.reorderMode = false;
                     await this.loadFiles();
                 });
             },
@@ -67,8 +71,11 @@
 
                 try {
                     const tracks = await window.hmqsClient.getPlaylistTracks(this.selectedPlaylist);
-                    const trackSet = new Set(tracks);
-                    this.files = allFiles.filter(x => trackSet.has(x.name));
+                    const byName = new Map(allFiles.map(f => [f.name, f]));
+                    this.files = tracks
+                        .map(trackName => byName.get(trackName))
+                        .filter(Boolean)
+                        .map(file => ({ ...file }));
                 } catch {
                     this.files = allFiles;
                 }
@@ -178,13 +185,77 @@
                 }
             },
 
-            async removeFromPlaylist(fileName) {
+            async removeFromPlaylist(fileName, index = null) {
                 if (!this.selectedPlaylist) {
                     return;
                 }
 
-                await window.hmqsClient.removeTrackFromPlaylist(this.selectedPlaylist, fileName);
+                await window.hmqsClient.removeTrackFromPlaylist(this.selectedPlaylist, fileName, index);
                 await this.loadFiles();
+            },
+
+            startDrag(index) {
+                if (!this.selectedPlaylist || !this.reorderMode) {
+                    return;
+                }
+
+                this.dragIndex = index;
+                this.dragOverIndex = index;
+            },
+
+            setDragOver(index) {
+                if (!this.selectedPlaylist || !this.reorderMode || this.dragIndex === null) {
+                    return;
+                }
+
+                this.dragOverIndex = index;
+            },
+
+            async dropDrag(index) {
+                if (!this.selectedPlaylist || !this.reorderMode || this.dragIndex === null) {
+                    return;
+                }
+
+                const from = this.dragIndex;
+                const to = index;
+                this.dragIndex = null;
+                this.dragOverIndex = null;
+
+                if (from === to || from < 0 || to < 0 || from >= this.files.length || to >= this.files.length) {
+                    return;
+                }
+
+                const reordered = [...this.files];
+                const [moved] = reordered.splice(from, 1);
+                reordered.splice(to, 0, moved);
+                this.files = reordered;
+
+                await window.hmqsClient.savePlaylistTracks(
+                    this.selectedPlaylist,
+                    reordered.map(x => x.name)
+                );
+            },
+
+            endDrag() {
+                this.dragIndex = null;
+                this.dragOverIndex = null;
+            },
+
+            rowDragClass(index) {
+                if (!this.selectedPlaylist || !this.reorderMode || this.dragIndex === null) {
+                    return '';
+                }
+
+                if (this.dragIndex === index) {
+                    return 'hmqs-dragging-row';
+                }
+
+                return this.dragOverIndex === index ? 'hmqs-drag-over-row' : '';
+            },
+
+            toggleReorderMode() {
+                this.reorderMode = !this.reorderMode;
+                this.endDrag();
             }
         };
     }

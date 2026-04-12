@@ -2,6 +2,94 @@
     window.hmqsModules = window.hmqsModules || {};
 
     function createMetadataModule(getActiveFolder, notifyFolderChanged) {
+        function normalizeText(value) {
+            return typeof value === 'string' ? value.trim() : '';
+        }
+
+        function normalizeOptionalId(value) {
+            return Number.isFinite(value) && value > 0 ? value : null;
+        }
+
+        function normalizeMetadataRecord(metadata) {
+            return {
+                itunesTrackId: normalizeOptionalId(metadata?.itunesTrackId),
+                trackTitle: normalizeText(metadata?.trackTitle),
+                itunesArtistId: normalizeOptionalId(metadata?.itunesArtistId),
+                artist: normalizeText(metadata?.artist),
+                itunesCollectionId: normalizeOptionalId(metadata?.itunesCollectionId),
+                album: normalizeText(metadata?.album),
+                genre: normalizeText(metadata?.genre),
+                year: normalizeOptionalId(metadata?.year),
+                imageUrl: normalizeText(metadata?.imageUrl)
+            };
+        }
+
+        function toSparseMetadataRecord(metadata) {
+            const normalized = normalizeMetadataRecord(metadata);
+            const sparse = {};
+
+            if (normalized.itunesTrackId) {
+                sparse.itunesTrackId = normalized.itunesTrackId;
+            }
+
+            if (normalized.trackTitle) {
+                sparse.trackTitle = normalized.trackTitle;
+            }
+
+            if (normalized.itunesArtistId) {
+                sparse.itunesArtistId = normalized.itunesArtistId;
+            }
+
+            if (normalized.artist) {
+                sparse.artist = normalized.artist;
+            }
+
+            if (normalized.itunesCollectionId) {
+                sparse.itunesCollectionId = normalized.itunesCollectionId;
+            }
+
+            if (normalized.album) {
+                sparse.album = normalized.album;
+            }
+
+            if (normalized.genre) {
+                sparse.genre = normalized.genre;
+            }
+
+            if (normalized.year) {
+                sparse.year = normalized.year;
+            }
+
+            if (normalized.imageUrl) {
+                sparse.imageUrl = normalized.imageUrl;
+            }
+
+            return sparse;
+        }
+
+        function buildScrobblePayload(metadata, progress, durationSeconds) {
+            const normalized = normalizeMetadataRecord(metadata);
+            if (!normalized.itunesTrackId) {
+                return null;
+            }
+
+            const payload = {
+                itunesTrackId: normalized.itunesTrackId,
+                progress,
+                durationSeconds
+            };
+
+            if (normalized.itunesArtistId) {
+                payload.itunesArtistId = normalized.itunesArtistId;
+            }
+
+            if (normalized.itunesCollectionId) {
+                payload.itunesCollectionId = normalized.itunesCollectionId;
+            }
+
+            return payload;
+        }
+
         function requireActiveFolder() {
             const activeFolder = getActiveFolder();
             if (!activeFolder || !activeFolder.handle) {
@@ -48,17 +136,7 @@
                 const text = await metadataFile.text();
                 const metadata = JSON.parse(text);
 
-                return {
-                    itunesTrackId: Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0 ? metadata.itunesTrackId : null,
-                    trackTitle: typeof metadata.trackTitle === 'string' ? metadata.trackTitle : '',
-                    itunesArtistId: Number.isFinite(metadata.itunesArtistId) && metadata.itunesArtistId > 0 ? metadata.itunesArtistId : null,
-                    artist: typeof metadata.artist === 'string' ? metadata.artist : '',
-                    itunesCollectionId: Number.isFinite(metadata.itunesCollectionId) && metadata.itunesCollectionId > 0 ? metadata.itunesCollectionId : null,
-                    album: typeof metadata.album === 'string' ? metadata.album : '',
-                    genre: typeof metadata.genre === 'string' ? metadata.genre : '',
-                    year: Number.isFinite(metadata.year) && metadata.year > 0 ? metadata.year : null,
-                    imageUrl: typeof metadata.imageUrl === 'string' ? metadata.imageUrl : ''
-                };
+                return normalizeMetadataRecord(metadata);
             } catch {
                 throw new Error(`Could not read metadata for ${fileName}.`);
             }
@@ -68,43 +146,7 @@
             const activeFolder = requireActiveFolder();
             const metadataFileName = `${fileName}.hmqsmeta`;
 
-            const normalized = {};
-
-            if (Number.isFinite(metadata?.itunesTrackId) && metadata.itunesTrackId > 0) {
-                normalized.itunesTrackId = metadata.itunesTrackId;
-            }
-
-            if (typeof metadata?.trackTitle === 'string' && metadata.trackTitle.trim()) {
-                normalized.trackTitle = metadata.trackTitle.trim();
-            }
-
-            if (Number.isFinite(metadata?.itunesArtistId) && metadata.itunesArtistId > 0) {
-                normalized.itunesArtistId = metadata.itunesArtistId;
-            }
-
-            if (typeof metadata?.artist === 'string' && metadata.artist.trim()) {
-                normalized.artist = metadata.artist.trim();
-            }
-
-            if (Number.isFinite(metadata?.itunesCollectionId) && metadata.itunesCollectionId > 0) {
-                normalized.itunesCollectionId = metadata.itunesCollectionId;
-            }
-
-            if (typeof metadata?.album === 'string' && metadata.album.trim()) {
-                normalized.album = metadata.album.trim();
-            }
-
-            if (typeof metadata?.genre === 'string' && metadata.genre.trim()) {
-                normalized.genre = metadata.genre.trim();
-            }
-
-            if (Number.isFinite(metadata?.year) && metadata.year > 0) {
-                normalized.year = metadata.year;
-            }
-
-            if (typeof metadata?.imageUrl === 'string' && metadata.imageUrl.trim()) {
-                normalized.imageUrl = metadata.imageUrl.trim();
-            }
+            const normalized = toSparseMetadataRecord(metadata);
 
             try {
                 await ensureWritePermission(activeFolder.handle);
@@ -127,7 +169,10 @@
             createMetadataFile,
             getMetadataFile,
             saveMetadataFile,
-            editMetadata
+            editMetadata,
+            buildScrobblePayload,
+            normalizeMetadataRecord,
+            toSparseMetadataRecord
         };
     }
 

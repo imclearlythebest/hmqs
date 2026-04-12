@@ -86,8 +86,16 @@
         function setPlaybackQueue(fileNames) {
             state.playbackQueue = (fileNames || []).map(x => `${x}`);
             if (state.currentTrackFileName) {
-                const index = state.playbackQueue.indexOf(state.currentTrackFileName);
-                state.currentIndex = index;
+                if (
+                    Number.isInteger(state.currentIndex)
+                    && state.currentIndex >= 0
+                    && state.currentIndex < state.playbackQueue.length
+                    && state.playbackQueue[state.currentIndex] === state.currentTrackFileName
+                ) {
+                    return;
+                }
+
+                state.currentIndex = state.playbackQueue.indexOf(state.currentTrackFileName);
             }
         }
 
@@ -142,7 +150,7 @@
 
             const fileName = state.playbackQueue[index];
             state.currentIndex = index;
-            await playMusicFile(fileName);
+            await playMusicFile(fileName, index);
         }
 
         async function nextTrack() {
@@ -170,7 +178,7 @@
             await submitScrobble(state.currentTrackFileName, progress, elapsed);
         }
 
-        async function playMusicFile(fileName) {
+        async function playMusicFile(fileName, indexHint = null) {
             const activeFolder = getActiveFolder();
             if (!activeFolder || !activeFolder.handle) {
                 return;
@@ -191,7 +199,9 @@
                 resetListenedSeconds();
                 beginListeningWindow();
                 const metadata = await readTrackMetadata(fileName);
-                if (state.playbackQueue.length) {
+                if (Number.isInteger(indexHint) && indexHint >= 0 && indexHint < state.playbackQueue.length) {
+                    state.currentIndex = indexHint;
+                } else if (state.playbackQueue.length) {
                     const idx = state.playbackQueue.indexOf(fileName);
                     state.currentIndex = idx;
                 }

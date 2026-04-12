@@ -26,23 +26,11 @@
             const activeFolder = requireActiveFolder();
             const metadataFileName = `${fileName}.hmqsmeta`;
 
-            const defaultMetadata = {
-                itunesTrackId: 0,
-                trackTitle: '',
-                itunesArtistId: 0,
-                artist: '',
-                itunesCollectionId: 0,
-                album: '',
-                genre: '',
-                year: 0,
-                imageUrl: ''
-            };
-
             try {
                 await ensureWritePermission(activeFolder.handle);
                 const metadataHandle = await activeFolder.handle.getFileHandle(metadataFileName, { create: true });
                 const writable = await metadataHandle.createWritable();
-                await writable.write(JSON.stringify(defaultMetadata, null, 2));
+                await writable.write(JSON.stringify({}, null, 2));
                 await writable.close();
                 notifyFolderChanged();
             } catch {
@@ -61,14 +49,14 @@
                 const metadata = JSON.parse(text);
 
                 return {
-                    itunesTrackId: Number.isFinite(metadata.itunesTrackId) ? metadata.itunesTrackId : 0,
+                    itunesTrackId: Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0 ? metadata.itunesTrackId : null,
                     trackTitle: typeof metadata.trackTitle === 'string' ? metadata.trackTitle : '',
-                    itunesArtistId: Number.isFinite(metadata.itunesArtistId) ? metadata.itunesArtistId : 0,
+                    itunesArtistId: Number.isFinite(metadata.itunesArtistId) && metadata.itunesArtistId > 0 ? metadata.itunesArtistId : null,
                     artist: typeof metadata.artist === 'string' ? metadata.artist : '',
-                    itunesCollectionId: Number.isFinite(metadata.itunesCollectionId) ? metadata.itunesCollectionId : 0,
+                    itunesCollectionId: Number.isFinite(metadata.itunesCollectionId) && metadata.itunesCollectionId > 0 ? metadata.itunesCollectionId : null,
                     album: typeof metadata.album === 'string' ? metadata.album : '',
                     genre: typeof metadata.genre === 'string' ? metadata.genre : '',
-                    year: Number.isFinite(metadata.year) ? metadata.year : 0,
+                    year: Number.isFinite(metadata.year) && metadata.year > 0 ? metadata.year : null,
                     imageUrl: typeof metadata.imageUrl === 'string' ? metadata.imageUrl : ''
                 };
             } catch {
@@ -80,17 +68,43 @@
             const activeFolder = requireActiveFolder();
             const metadataFileName = `${fileName}.hmqsmeta`;
 
-            const normalized = {
-                itunesTrackId: Number.isFinite(metadata?.itunesTrackId) && metadata.itunesTrackId > 0 ? metadata.itunesTrackId : 0,
-                trackTitle: typeof metadata?.trackTitle === 'string' ? metadata.trackTitle : '',
-                itunesArtistId: Number.isFinite(metadata?.itunesArtistId) && metadata.itunesArtistId >= 0 ? metadata.itunesArtistId : 0,
-                artist: typeof metadata?.artist === 'string' ? metadata.artist : '',
-                itunesCollectionId: Number.isFinite(metadata?.itunesCollectionId) && metadata.itunesCollectionId >= 0 ? metadata.itunesCollectionId : 0,
-                album: typeof metadata?.album === 'string' ? metadata.album : '',
-                genre: typeof metadata?.genre === 'string' ? metadata.genre : '',
-                year: Number.isFinite(metadata?.year) && metadata.year >= 0 ? metadata.year : 0,
-                imageUrl: typeof metadata?.imageUrl === 'string' ? metadata.imageUrl : ''
-            };
+            const normalized = {};
+
+            if (Number.isFinite(metadata?.itunesTrackId) && metadata.itunesTrackId > 0) {
+                normalized.itunesTrackId = metadata.itunesTrackId;
+            }
+
+            if (typeof metadata?.trackTitle === 'string' && metadata.trackTitle.trim()) {
+                normalized.trackTitle = metadata.trackTitle.trim();
+            }
+
+            if (Number.isFinite(metadata?.itunesArtistId) && metadata.itunesArtistId > 0) {
+                normalized.itunesArtistId = metadata.itunesArtistId;
+            }
+
+            if (typeof metadata?.artist === 'string' && metadata.artist.trim()) {
+                normalized.artist = metadata.artist.trim();
+            }
+
+            if (Number.isFinite(metadata?.itunesCollectionId) && metadata.itunesCollectionId > 0) {
+                normalized.itunesCollectionId = metadata.itunesCollectionId;
+            }
+
+            if (typeof metadata?.album === 'string' && metadata.album.trim()) {
+                normalized.album = metadata.album.trim();
+            }
+
+            if (typeof metadata?.genre === 'string' && metadata.genre.trim()) {
+                normalized.genre = metadata.genre.trim();
+            }
+
+            if (Number.isFinite(metadata?.year) && metadata.year > 0) {
+                normalized.year = metadata.year;
+            }
+
+            if (typeof metadata?.imageUrl === 'string' && metadata.imageUrl.trim()) {
+                normalized.imageUrl = metadata.imageUrl.trim();
+            }
 
             try {
                 await ensureWritePermission(activeFolder.handle);

@@ -422,12 +422,12 @@
             form: {
                 itunesTrackId: null,
                 trackTitle: '',
-                itunesArtistId: 0,
+                itunesArtistId: null,
                 artist: '',
-                itunesCollectionId: 0,
+                itunesCollectionId: null,
                 album: '',
                 genre: '',
-                year: 0,
+                year: null,
                 imageUrl: ''
             },
 
@@ -436,14 +436,14 @@
                     await window.hmqsClient.initializePicker();
                     const metadata = await window.hmqsClient.getMetadataFile(fileName);
 
-                    this.form.itunesTrackId = metadata.itunesTrackId ?? null;
+                    this.form.itunesTrackId = Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0 ? metadata.itunesTrackId : null;
                     this.form.trackTitle = metadata.trackTitle ?? '';
-                    this.form.itunesArtistId = Number.isFinite(metadata.itunesArtistId) ? metadata.itunesArtistId : 0;
+                    this.form.itunesArtistId = Number.isFinite(metadata.itunesArtistId) && metadata.itunesArtistId > 0 ? metadata.itunesArtistId : null;
                     this.form.artist = metadata.artist ?? '';
-                    this.form.itunesCollectionId = Number.isFinite(metadata.itunesCollectionId) ? metadata.itunesCollectionId : 0;
+                    this.form.itunesCollectionId = Number.isFinite(metadata.itunesCollectionId) && metadata.itunesCollectionId > 0 ? metadata.itunesCollectionId : null;
                     this.form.album = metadata.album ?? '';
                     this.form.genre = metadata.genre ?? '';
-                    this.form.year = Number.isFinite(metadata.year) ? metadata.year : 0;
+                    this.form.year = Number.isFinite(metadata.year) && metadata.year > 0 ? metadata.year : null;
                     this.form.imageUrl = metadata.imageUrl ?? '';
                 } catch (err) {
                     this.error = err?.message || 'Failed to load metadata.';
@@ -455,14 +455,14 @@
                 this.success = '';
 
                 const payload = {
-                    itunesTrackId: Number.isFinite(this.form.itunesTrackId) ? this.form.itunesTrackId : 0,
+                    itunesTrackId: Number.isFinite(this.form.itunesTrackId) && this.form.itunesTrackId > 0 ? this.form.itunesTrackId : null,
                     trackTitle: this.form.trackTitle?.trim() ?? '',
-                    itunesArtistId: Number.isFinite(this.form.itunesArtistId) ? this.form.itunesArtistId : 0,
+                    itunesArtistId: Number.isFinite(this.form.itunesArtistId) && this.form.itunesArtistId > 0 ? this.form.itunesArtistId : null,
                     artist: this.form.artist?.trim() ?? '',
-                    itunesCollectionId: Number.isFinite(this.form.itunesCollectionId) ? this.form.itunesCollectionId : 0,
+                    itunesCollectionId: Number.isFinite(this.form.itunesCollectionId) && this.form.itunesCollectionId > 0 ? this.form.itunesCollectionId : null,
                     album: this.form.album?.trim() ?? '',
                     genre: this.form.genre?.trim() ?? '',
-                    year: Number.isFinite(this.form.year) ? this.form.year : 0,
+                    year: Number.isFinite(this.form.year) && this.form.year > 0 ? this.form.year : null,
                     imageUrl: this.form.imageUrl?.trim() ?? ''
                 };
 

@@ -45,7 +45,8 @@ using (var scope = WebApp.Services.CreateScope())
 
 WebApp.UseHttpsRedirection();
 WebApp.UseStaticFiles();
-WebApp.MapRoutes();
 WebApp.UseAuthentication();
+WebApp.UseAuthorization();
+WebApp.MapRoutes();
 
 WebApp.Run();

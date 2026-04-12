@@ -1,0 +1,37 @@
+@model IEnumerable<Scrobble>
+@{
+  ViewData["Title"] = "Listening History";
+}
+
+<div class="hmqs-panel p-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="m-0">Listening History</h5>
+    <span class="small text-body-secondary">Latest @Model.Count() scrobbles</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Track</th>
+          <th>Artist</th>
+          <th>Played At</th>
+          <th>Duration</th>
+          <th>Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var row in Model)
+        {
+          <tr>
+            <td>@row.Track.TrackName</td>
+            <td>@row.Track.Artist.ArtistName</td>
+            <td>@row.ScrobbledAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+            <td>@row.DurationSeconds s</td>
+            <td>@Math.Round(row.Progress, 1).ToString("0.#")%</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

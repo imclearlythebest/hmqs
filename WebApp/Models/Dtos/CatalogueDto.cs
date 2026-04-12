@@ -1,6 +1,6 @@
 namespace WebApp.Models.Dtos;
 
-class CatalogueDto
+public class CatalogueDto
 {
     public int ItunesTrackId { get; set; }
     public string TrackTitle { get; set; } = "";
@@ -9,5 +9,6 @@ class CatalogueDto
     public int ItunesCollectionId { get; set; }
     public string Album { get; set; } = "";
     public string Genre { get; set; } = "";
+    public int Year { get; set; }
     public string ImageUrl { get; set; } = "";
 }

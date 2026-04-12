@@ -1,50 +1,263 @@
+:root {
+    --hmqs-accent: #1f8a70;
+    --hmqs-accent-soft: #d9f3ec;
+}
+
+html,
 body {
+    height: 100%;
+}
+
+body.hmqs-body {
     margin: 0;
-    height: 100vh;
+    font-family: "Segoe UI", "Noto Sans", sans-serif;
     display: grid;
-    grid-template-areas:
-        "header header"
-        "sidebar main"
-        "footer footer";
-    grid-template-columns: 250px 1fr;
     grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 10% 10%, rgba(31, 138, 112, 0.08), transparent 42%),
+        radial-gradient(circle at 90% 90%, rgba(13, 110, 253, 0.08), transparent 38%);
 }
 
-body>header {
-    grid-area: header;
-    padding: 1rem;
-    border-bottom: 1px solid var(--pico-muted-border-color);
+.hmqs-shell {
+    min-height: 0;
 }
 
-body>aside {
-    grid-area: sidebar;
-    padding: 1rem;
-    border-right: 1px solid var(--pico-muted-border-color);
-}
-
-body>main {
-    grid-area: main;
+.hmqs-main {
+    min-height: 0;
     overflow-y: auto;
-    padding: 1rem;
 }
 
-body>footer {
-    grid-area: footer;
-    padding: 1rem;
-    border-top: 1px solid var(--pico-muted-border-color);
+.navbar-brand {
+    letter-spacing: 0.02em;
 }
 
-.player-controls {
+.player-controls .btn {
+    min-width: 2.5rem;
+}
+
+.hmqs-panel {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    background: var(--bs-body-bg);
+    box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.04);
+}
+
+[data-bs-theme="dark"] .hmqs-panel {
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.25);
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-border-color: rgba(255, 255, 255, 0.06);
+}
+
+.hmqs-track-row {
+    cursor: pointer;
+}
+
+.hmqs-track-cover,
+.hmqs-player-cover {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.45rem;
+    overflow: hidden;
+    flex: 0 0 auto;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .hmqs-track-cover,
+[data-bs-theme="dark"] .hmqs-player-cover {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.hmqs-cover-placeholder {
+    width: 100%;
+    height: 100%;
     display: flex;
-    list-style: none;
-    justify-content: center;
     align-items: center;
-    gap: 1rem;
+    justify-content: center;
+    color: var(--bs-secondary-color);
+    background: var(--bs-tertiary-bg);
 }
 
-.pickerContainer {
-  display: flex;
-  justify-content: center;  /* horizontal */
-  align-items: center;      /* vertical */
-  height: 100%;
+.hmqs-inline-indicator {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: #8a5a00;
+}
+
+[data-bs-theme="dark"] .hmqs-inline-indicator {
+    color: #ffd480;
+}
+
+.hmqs-playlist-item {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    background: var(--bs-body-bg);
+}
+
+.hmqs-playlist-name {
+    border: 0;
+    background: transparent;
+    color: var(--bs-body-color);
+    box-shadow: none;
+}
+
+.hmqs-playlist-name:hover,
+.hmqs-playlist-name:focus-visible,
+.hmqs-playlist-name:active {
+    border: 0;
+    background: transparent;
+    color: var(--bs-body-color);
+    box-shadow: none;
+}
+
+.hmqs-playlist-row {
+    cursor: pointer;
+}
+
+.hmqs-playlist-row-active {
+    background: color-mix(in srgb, var(--bs-primary) 11%, transparent);
+    border-color: color-mix(in srgb, var(--bs-primary) 35%, var(--bs-border-color));
+}
+
+[data-bs-theme="dark"] .hmqs-playlist-item {
+    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+[data-bs-theme="dark"] .hmqs-playlist-row-active {
+    background: rgba(13, 110, 253, 0.16);
+    border-color: rgba(84, 154, 255, 0.35);
+}
+
+[data-bs-theme="dark"] .modal-content {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.hmqs-playlist-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    opacity: 0.12;
+    transition: opacity 0.16s ease;
+}
+
+.hmqs-playlist-row:hover .hmqs-playlist-actions,
+.hmqs-playlist-row:focus-within .hmqs-playlist-actions {
+    opacity: 1;
+}
+
+.hmqs-player-cover {
+    width: 2.3rem;
+    height: 2.3rem;
+}
+
+.hmqs-track-cover img,
+.hmqs-player-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.hmqs-row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    opacity: 0.1;
+    transform: translateY(1px);
+    transition: opacity 0.16s ease;
+}
+
+.hmqs-track-row:hover .hmqs-row-actions,
+.hmqs-track-row:focus-within .hmqs-row-actions {
+    opacity: 1;
+}
+
+.hmqs-icon-btn {
+    color: var(--bs-secondary-color);
+    text-decoration: none;
+    border-radius: 999px;
+    line-height: 1;
+}
+
+.hmqs-icon-btn:hover,
+.hmqs-icon-btn:focus-visible {
+    color: var(--bs-body-color);
+    background: var(--bs-secondary-bg);
+}
+
+.hmqs-icon-btn.hmqs-icon-btn-danger:hover,
+.hmqs-icon-btn.hmqs-icon-btn-danger:focus-visible {
+    color: var(--bs-danger);
+}
+
+.hmqs-seekbar {
+    --seek-percent: 0%;
+    --seek-track: var(--bs-secondary-bg);
+    height: 0.95rem;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.hmqs-seekbar:focus {
+    outline: none;
+}
+
+.hmqs-seekbar::-webkit-slider-runnable-track {
+    height: 0.3rem;
+    border-radius: 999px;
+    background: linear-gradient(to right, var(--bs-primary) 0%, var(--bs-primary) var(--seek-percent), var(--seek-track) var(--seek-percent), var(--seek-track) 100%);
+}
+
+.hmqs-seekbar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 0.9rem;
+    height: 0.9rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--bs-primary);
+    margin-top: -0.3rem;
+}
+
+.hmqs-seekbar::-moz-range-track {
+    height: 0.3rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--seek-track);
+}
+
+.hmqs-seekbar::-moz-range-progress {
+    height: 0.3rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--bs-primary);
+}
+
+.hmqs-seekbar::-moz-range-thumb {
+    width: 0.9rem;
+    height: 0.9rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--bs-primary);
+}
+
+@media (hover: none) {
+    .hmqs-row-actions {
+        opacity: 1;
+    }
+
+    .hmqs-playlist-actions {
+        opacity: 1;
+    }
 }

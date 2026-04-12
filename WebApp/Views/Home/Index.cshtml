@@ -4,20 +4,124 @@
 
 @section Styles {
   <style>
-    body>main {
-      padding: 0rem;
-    }
+        .hmqs-home-wrapper {
+            padding: 0.5rem;
+        }
   </style>
 }
 
-<div class='pickerContainer'>
-  <div style="text-align: center;">
-    <button id="pick-btn">Select Folder</button>
-    <p></p>
-    <p id="status">No folder selected yet.</p>
-  </div>
+<div class="hmqs-home-wrapper" x-data="window.hmqsPages.homePage()" x-init="init()">
+
+        <div class="hmqs-panel p-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 class="m-0">Local Library</h5>
+                <span class="text-body-secondary small" x-text="loading ? 'Refreshing...' : `${files.length} track(s)`"></span>
+            </div>
+
+            <div class="alert alert-secondary py-2" x-show="selectedPlaylist">
+                Showing playlist: <strong x-text="selectedPlaylist"></strong>
+            </div>
+
+            <div class="alert alert-info mb-3" x-show="loading">Loading music files...</div>
+
+            <div class="table-responsive" x-show="!loading && files.length > 0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Track</th>
+                            <th>Artist</th>
+                            <th>Album</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="file in files" :key="file.name">
+                            <tr class="hmqs-track-row" x-on:click="playFile(file.name)">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="hmqs-track-cover">
+                                            <img x-show="file.imageUrl" :src="file.imageUrl" alt="Track cover" loading="lazy">
+                                            <div class="hmqs-cover-placeholder" x-show="!file.imageUrl" aria-hidden="true">
+                                                <i class="fa-solid fa-music"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold d-flex align-items-center gap-2">
+                                                <span x-text="displayTrackName(file)"></span>
+                                                <span class="hmqs-inline-indicator" x-show="!file.canScrobble" title="Missing iTunes ID">
+                                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span x-text="file.artist || '-'" class="text-body-secondary"></span>
+                                </td>
+                                <td>
+                                    <span x-text="file.album || '-'" class="text-body-secondary"></span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="hmqs-row-actions" x-on:click.stop>
+                                        <button x-on:click="openMetadataEditor(file)" class="btn btn-sm btn-link hmqs-icon-btn" :title="file.hasMetadata ? 'Edit metadata' : 'Add metadata'">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        <button x-show="!selectedPlaylist" x-on:click="openAddToPlaylistModal(file.name)" class="btn btn-sm btn-link hmqs-icon-btn" title="Add to playlist">
+                                            <i class="fa-solid fa-circle-plus"></i>
+                                        </button>
+                                        <button x-show="selectedPlaylist" x-on:click="removeFromPlaylist(file.name)" class="btn btn-sm btn-link hmqs-icon-btn hmqs-icon-btn-danger" title="Remove from playlist">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="alert alert-warning mb-0" x-show="!loading && files.length === 0">
+                No music files found in this folder. Select a folder with .mp3, .wav, .flac, .m4a, .ogg, .aac, or .wma files.
+            </div>
+
+            <div class="modal fade" id="hmqsAddToPlaylistModal" tabindex="-1" aria-hidden="true" x-ref="playlistModal">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add To Playlist</h5>
+                            <button type="button" class="btn-close" x-on:click="closeAddToPlaylistModal()" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="small text-body-secondary mb-2">Track</p>
+                            <p class="mb-3 fw-semibold" x-text="pendingPlaylistFile || 'No track selected'"></p>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="hmqsPlaylistSelect">Existing playlist</label>
+                                <select id="hmqsPlaylistSelect" class="form-select" x-model="playlistTarget">
+                                    <option value="">Select playlist</option>
+                                    <template x-for="playlist in availablePlaylists" :key="playlist">
+                                        <option :value="playlist" x-text="playlist"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="form-label" for="hmqsNewPlaylistName">Or create new playlist</label>
+                                <input id="hmqsNewPlaylistName" type="text" class="form-control" placeholder="New playlist name" x-model="newPlaylistName">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" x-on:click="closeAddToPlaylistModal()">Cancel</button>
+                            <button type="button" class="btn btn-primary" x-on:click="confirmAddToPlaylist()" :disabled="addingToPlaylist || (!playlistTarget && !newPlaylistName.trim())">
+                                <span x-show="!addingToPlaylist">Add</span>
+                                <span x-show="addingToPlaylist">Adding...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
 </div>
 
 @section Scripts {
-  <script src=/js/picker.js asp-append-version="true"></script>
 }

@@ -108,14 +108,12 @@
             }
 
             const existing = await getPlaylistTracks(playlistName);
-            if (!existing.includes(track)) {
-                existing.push(track);
-            }
+            existing.push(track);
 
             await savePlaylistTracks(playlistName, existing);
         }
 
-        async function removeTrackFromPlaylist(name, fileName) {
+        async function removeTrackFromPlaylist(name, fileName, occurrenceIndex = null) {
             const playlistName = normalizeName(name);
             const track = normalizeName(fileName);
             if (!playlistName || !track) {
@@ -123,7 +121,20 @@
             }
 
             const existing = await getPlaylistTracks(playlistName);
-            const updated = existing.filter(x => x !== track);
+
+            let removeAt = -1;
+            if (Number.isInteger(occurrenceIndex) && occurrenceIndex >= 0 && occurrenceIndex < existing.length && existing[occurrenceIndex] === track) {
+                removeAt = occurrenceIndex;
+            } else {
+                removeAt = existing.indexOf(track);
+            }
+
+            if (removeAt < 0) {
+                return;
+            }
+
+            const updated = [...existing];
+            updated.splice(removeAt, 1);
             await savePlaylistTracks(playlistName, updated);
         }
 

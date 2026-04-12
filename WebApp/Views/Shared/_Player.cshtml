@@ -1,6 +1,64 @@
-<progress value="120" max="180"></progress>
-<div class="player-controls">
-  <li><a><i class="fas fa-backward-step"></i></a></li>
-  <li><a><i class="fas fa-play"></i></a></li>
-  <li><a><i class="fas fa-forward-step"></i></a></li>
+<div x-data="window.hmqsPages.playerWidget()">
+    <div class="container-fluid">
+        @if (User.Identity?.IsAuthenticated != true)
+        {
+            <div class="alert alert-warning fade show py-2 mb-2 d-flex align-items-center gap-2" role="alert">
+                <span class="small">Login required for scrobble tracking.</span>
+                <button type="button" class="btn-close ms-auto p-0 flex-shrink-0" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2" x-show="currentTrack">
+                <div class="hmqs-player-cover">
+                    <img x-show="currentCoverUrl" :src="currentCoverUrl" alt="Now playing cover" loading="lazy">
+                    <div class="hmqs-cover-placeholder" x-show="!currentCoverUrl" aria-hidden="true">
+                        <i class="fa-solid fa-music"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="small fw-semibold" x-text="currentTrackDisplay"></div>
+                    <div class="small text-body-secondary" x-show="currentArtist || currentAlbum" x-text="displayNowPlayingMeta()"></div>
+                </div>
+            </div>
+            <div class="small text-body-secondary" x-show="!currentTrack">Select a track to start playback</div>
+            <div class="player-controls btn-group" role="group" aria-label="Player controls">
+                <button class="btn btn-outline-secondary" type="button" aria-label="Previous track" x-on:click="previous()">
+                    <i class="fas fa-backward-step"></i>
+                </button>
+                <button class="btn btn-primary" type="button" x-on:click="pause()" x-show="isPlaying" aria-label="Pause">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button class="btn btn-primary" type="button" x-on:click="play()" x-show="!isPlaying" aria-label="Play">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" aria-label="Next track" x-on:click="next()">
+                    <i class="fas fa-forward-step"></i>
+                </button>
+                <button class="btn" type="button" aria-label="Toggle shuffle" :class="isShuffle ? 'btn-warning' : 'btn-outline-secondary'" x-on:click="toggleShuffle()">
+                    <i class="fas fa-shuffle"></i>
+                </button>
+                <button class="btn" type="button" aria-label="Toggle loop" :class="isLoop ? 'btn-warning' : 'btn-outline-secondary'" x-on:click="toggleLoop()">
+                    <i class="fas fa-repeat"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mt-2" x-show="currentTrack">
+            <span class="small text-body-secondary" x-text="formatTime(currentTime)"></span>
+            <input type="range"
+                   class="w-100 hmqs-seekbar"
+                   :value="currentTime"
+                   :max="duration"
+                   step="0.01"
+                   :style="seekStyle()"
+                   :title="seekTooltip"
+                   x-on:mousemove="updateSeekHover($event)"
+                   x-on:input="seekInput($event)"
+                   x-on:change="seekCommit()"
+                   x-on:mouseup="seekCommit()"
+                   x-on:touchend="seekCommit()">
+            <span class="small text-body-secondary" x-text="formatTime(duration)"></span>
+        </div>
+    </div>
 </div>

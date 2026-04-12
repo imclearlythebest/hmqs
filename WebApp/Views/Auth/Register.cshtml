@@ -5,24 +5,36 @@
 
 @section Styles {
   <style>
-    body > main {
-      padding: 2rem 10rem 0rem 10rem;
+    .auth-wrap {
+      max-width: 560px;
+      margin: 1.5rem auto;
     }
   </style>
 }
 
-<form asp-action="Register" asp-controller="Auth" method="post">
-  <fieldset>
-    <h3>Register</h3>
-    <label for="username">Username:</label>
-    <input type="text" id="username" name="username" required>
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required>
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required>
-    <label for="confirmPassword">Confirm Password:</label>
-    <input type="password" id="confirmPassword" name="confirmPassword" required>
-    <button type="submit">Register</button>
-    <div asp-validation-summary="All"></div>
-  </fieldset>
-</form>
+<div class="auth-wrap hmqs-panel p-4">
+  <h4 class="mb-3">Register</h4>
+  <form asp-action="Register" asp-controller="Auth" method="post" class="row g-3">
+    <div class="col-12">
+      <label for="username" class="form-label">Username</label>
+      <input type="text" id="username" name="username" class="form-control" required>
+    </div>
+    <div class="col-12">
+      <label for="email" class="form-label">Email</label>
+      <input type="email" id="email" name="email" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+      <label for="password" class="form-label">Password</label>
+      <input type="password" id="password" name="password" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+      <label for="confirmPassword" class="form-label">Confirm Password</label>
+      <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
+    </div>
+    <div class="col-12 d-flex justify-content-between align-items-center">
+      <button type="submit" class="btn btn-primary">Register</button>
+      <a asp-controller="Auth" asp-action="Login" class="btn btn-link">Already have an account?</a>
+    </div>
+    <div class="col-12 text-danger" asp-validation-summary="All"></div>
+  </form>
+</div>

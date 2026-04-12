@@ -17,11 +17,23 @@ public class AuthController: Controller
         _userManager = userManager;
         _signInManager = signInManager;
     }
+
+    private void UseMinimalLayout()
+    {
+        ViewData["HideSidebar"] = true;
+        ViewData["HidePlayer"] = true;
+    }
+
     [HttpGet]
-    public IActionResult Login() => View();
+    public IActionResult Login()
+    {
+        UseMinimalLayout();
+        return View();
+    }
     [HttpPost]
     public async Task<IActionResult> Login(LoginDto model)
     {
+        UseMinimalLayout();
         if (!ModelState.IsValid) return View(model);
         var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, isPersistent: true, lockoutOnFailure: false);
         if (result.Succeeded)
@@ -32,10 +44,15 @@ public class AuthController: Controller
         return View(model);
     }
     [HttpGet]
-    public IActionResult Register() => View();
+    public IActionResult Register()
+    {
+        UseMinimalLayout();
+        return View();
+    }
     [HttpPost]
     public async Task<IActionResult> Register(RegisterDto model)
     {
+        UseMinimalLayout();
         if (!ModelState.IsValid) return View(model);
         var user = new WebAppUser
         {
@@ -61,6 +78,7 @@ public class AuthController: Controller
     }
     public IActionResult Denied()
     {
+        UseMinimalLayout();
         return View();
     }
 }

@@ -26,8 +26,8 @@
 
   <form x-on:submit.prevent="save()" class="row g-3">
     <div class="col-md-4">
-      <label for="itunesTrackId" class="form-label">iTunes Track Id</label>
-      <input id="itunesTrackId" class="form-control" type="number" x-model.number="form.itunesTrackId" min="0" placeholder="Optional" />
+      <label for="itunesTrackId" class="form-label">iTunes Track ID</label>
+      <input id="itunesTrackId" class="form-control" type="number" x-model.number="form.itunesTrackId" min="0" />
     </div>
 
     <div class="col-md-8">
@@ -36,7 +36,7 @@
     </div>
 
     <div class="col-md-4">
-      <label for="itunesArtistId" class="form-label">iTunes Artist Id</label>
+      <label for="itunesArtistId" class="form-label">iTunes Artist ID</label>
       <input id="itunesArtistId" class="form-control" type="number" x-model.number="form.itunesArtistId" min="0" />
     </div>
 
@@ -46,12 +46,12 @@
     </div>
 
     <div class="col-md-4">
-      <label for="itunesCollectionId" class="form-label">iTunes Collection Id</label>
+      <label for="itunesCollectionId" class="form-label">iTunes Collection ID</label>
       <input id="itunesCollectionId" class="form-control" type="number" x-model.number="form.itunesCollectionId" min="0" />
     </div>
 
     <div class="col-md-8">
-      <label for="album" class="form-label">Album</label>
+      <label for="album" class="form-label">Album Name</label>
       <input id="album" class="form-control" type="text" x-model="form.album" />
     </div>
 
@@ -67,7 +67,7 @@
 
     <div class="col-md-6">
       <label for="imageUrl" class="form-label">Image Url</label>
-      <input id="imageUrl" class="form-control" type="url" x-model="form.imageUrl" placeholder="https://..." />
+      <input id="imageUrl" class="form-control" type="url" x-model="form.imageUrl" />
     </div>
 
     <div class="col-12 d-flex gap-2">

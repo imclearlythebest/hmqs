@@ -1,23 +1,38 @@
-<nav>
-  <ul>
-    <li>
-      <strong>
-        <a asp-controller="Home" asp-action="Index" style="text-decoration: none;">
-          <i class="fas fa-music"></i> HMQS
-        </a>
-      </strong>
-    </li>
-  </ul>
-  <ul>
-  @if (User.Identity?.IsAuthenticated == true)
-  {
-    <partial name="_AvatarMenu" />
-  }
-  else
-  {
-    <li><a asp-controller="Auth" asp-action="Login">Login</a></li>
-    <li><a asp-controller="Auth" asp-action="Register">Register</a></li>
-  }
-   <li><a id="theme-toggle"><span class="fa-solid fa-moon"></span></a></li>
-  </ul>
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-semibold" asp-controller="Home" asp-action="Index">
+      <i class="fas fa-music me-2"></i>HMQS
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#hmqsNavbar" aria-controls="hmqsNavbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="hmqsNavbar">
+      <div class="ms-lg-3 me-auto mt-3 mt-lg-0">
+        <partial name="_PickerDropdown" />
+      </div>
+
+      <ul class="navbar-nav align-items-lg-center gap-lg-2 mt-3 mt-lg-0">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+          <partial name="_AvatarMenu" />
+        }
+        else
+        {
+          <li class="nav-item">
+            <a class="btn btn-sm btn-outline-secondary" asp-controller="Auth" asp-action="Login">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-sm btn-primary" asp-controller="Auth" asp-action="Register">Register</a>
+          </li>
+        }
+        <li class="nav-item">
+          <button id="theme-toggle" class="btn btn-sm btn-outline-secondary" type="button" aria-label="Toggle theme">
+            <span class="fa-solid fa-moon"></span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
 </nav>

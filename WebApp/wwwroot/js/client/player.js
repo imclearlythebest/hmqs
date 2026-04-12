@@ -39,22 +39,27 @@
                     return;
                 }
 
+                const payload = {
+                    itunesTrackId: metadata.itunesTrackId,
+                    progress,
+                    durationSeconds
+                };
+
+                if (Number.isFinite(metadata.itunesArtistId) && metadata.itunesArtistId > 0) {
+                    payload.itunesArtistId = metadata.itunesArtistId;
+                }
+
+                if (Number.isFinite(metadata.itunesCollectionId) && metadata.itunesCollectionId > 0) {
+                    payload.itunesCollectionId = metadata.itunesCollectionId;
+                }
+
                 await fetch('/Scrobble/Submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     credentials: 'include',
-                    body: JSON.stringify({
-                        itunesTrackId: metadata.itunesTrackId,
-                        progress,
-                        durationSeconds,
-                        trackTitle: metadata.trackTitle || fileName,
-                        artist: metadata.artist || '',
-                        genre: metadata.genre || '',
-                        fileName,
-                        year: Number.isFinite(metadata.year) ? metadata.year : 0
-                    })
+                    body: JSON.stringify(payload)
                 });
             } catch {
                 // best effort scrobbling

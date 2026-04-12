@@ -16,9 +16,9 @@ public class ScrobbleController(WebAppDbContext context) : Controller
     [HttpPost]
     public IActionResult Submit([FromBody] ScrobbleDto model)
     {
-        if ((model.ItunesTrackId <= 0) && string.IsNullOrWhiteSpace(model.FileName))
+        if (model.ItunesTrackId <= 0)
         {
-            return BadRequest(new { message = "Either itunesTrackId or fileName is required" });
+            return BadRequest(new { message = "itunesTrackId is required" });
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -31,22 +31,15 @@ public class ScrobbleController(WebAppDbContext context) : Controller
             return Unauthorized(new { message = "Login required for scrobbling." });
         }
 
-        Track? track = null;
-
-        if (!string.IsNullOrWhiteSpace(model.FileName))
-        {
-            var trimmedFileName = model.FileName.Trim();
-            track = _context.Tracks.FirstOrDefault(t => t.FileName == trimmedFileName);
-        }
-
-        if (track == null && model.ItunesTrackId > 0)
-        {
-            track = _context.Tracks.FirstOrDefault(t => t.ItunesTrackId == model.ItunesTrackId);
-        }
+        Track? track = _context.Tracks
+            .Include(t => t.Artist)
+            .ThenInclude(a => a.PrimaryGenre)
+            .Include(t => t.Genre)
+            .FirstOrDefault(t => t.ItunesTrackId == model.ItunesTrackId);
 
         if (track == null)
         {
-            var genreName = string.IsNullOrWhiteSpace(model.Genre) ? "Unknown" : model.Genre.Trim();
+            var genreName = "Unknown";
             var genre = _context.Genres.FirstOrDefault(g => g.GenreName == genreName);
             if (genre == null)
             {
@@ -54,14 +47,20 @@ public class ScrobbleController(WebAppDbContext context) : Controller
                 _context.Genres.Add(genre);
             }
 
-            var artistName = string.IsNullOrWhiteSpace(model.Artist) ? "Unknown Artist" : model.Artist.Trim();
-            var artist = _context.Artists.FirstOrDefault(a => a.ArtistName == artistName);
+            Artist? artist = null;
+            if (model.ItunesArtistId.HasValue && model.ItunesArtistId.Value > 0)
+            {
+                artist = _context.Artists
+                    .Include(a => a.PrimaryGenre)
+                    .FirstOrDefault(a => a.ItunesArtistId == model.ItunesArtistId.Value);
+            }
+
             if (artist == null)
             {
                 artist = new Artist
                 {
-                    ItunesArtistId = 0,
-                    ArtistName = artistName,
+                    ItunesArtistId = model.ItunesArtistId.HasValue && model.ItunesArtistId.Value > 0 ? model.ItunesArtistId.Value : 0,
+                    ArtistName = "Unknown Artist",
                     PrimaryGenre = genre
                 };
                 _context.Artists.Add(artist);
@@ -69,27 +68,27 @@ public class ScrobbleController(WebAppDbContext context) : Controller
 
             track = new Track
             {
-                ItunesTrackId = model.ItunesTrackId > 0 ? model.ItunesTrackId : 0,
-                FileName = model.FileName?.Trim() ?? string.Empty,
-                TrackName = string.IsNullOrWhiteSpace(model.TrackTitle) ? (model.FileName?.Trim() ?? "Unknown Track") : model.TrackTitle,
-                Year = model.Year,
+                ItunesTrackId = model.ItunesTrackId,
+                FileName = string.Empty,
+                TrackName = "Unknown Track",
+                Year = 0,
                 PreviewUrl = string.Empty,
                 ArtworkUrl = string.Empty,
                 Artist = artist,
-                Genre = genre
+                Genre = artist.PrimaryGenre ?? genre
             };
             _context.Tracks.Add(track);
         }
         else
         {
-            if (track.ItunesTrackId <= 0 && model.ItunesTrackId > 0)
+            if (track.ItunesTrackId <= 0)
             {
                 track.ItunesTrackId = model.ItunesTrackId;
             }
 
-            if (string.IsNullOrWhiteSpace(track.FileName) && !string.IsNullOrWhiteSpace(model.FileName))
+            if (track.Artist != null && track.Artist.ItunesArtistId <= 0 && model.ItunesArtistId.HasValue && model.ItunesArtistId.Value > 0)
             {
-                track.FileName = model.FileName.Trim();
+                track.Artist.ItunesArtistId = model.ItunesArtistId.Value;
             }
         }
 

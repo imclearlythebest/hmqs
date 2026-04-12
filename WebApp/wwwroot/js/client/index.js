@@ -45,6 +45,7 @@
         createMetadataFile: metadata.createMetadataFile,
         getMetadataFile: metadata.getMetadataFile,
         saveMetadataFile: metadata.saveMetadataFile,
+        buildScrobblePayload: metadata.buildScrobblePayload,
         editMetadata: metadata.editMetadata,
         listPlaylists: playlist.listPlaylists,
         getPlaylistTracks: playlist.getPlaylistTracks,

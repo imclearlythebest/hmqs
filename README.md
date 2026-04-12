@@ -39,7 +39,7 @@
 - Metadata editor with iTunes IDs, title/artist/album/genre/year/image URL
 - Playlist create/rename/delete and add/remove track flow
 - Bottom player with seekbar, shuffle/loop, and now-playing metadata
-- Scrobble submit endpoint + authenticated history view
+- Scrobble submit endpoint + authenticated history view (ID-focused payload)
 
 ## Running the App
 1. Configure `DefaultConnection` in `WebApp/appsettings.Development.json`

@@ -7,5 +7,8 @@ public class Artist
     public int ItunesArtistId { get; set; }
     [Required]
     public string ArtistName { get; set; } = string.Empty;
-    public Genre PrimaryGenre { get; set; } = new Genre();
+    public DateTime? LastCrawledAtUtc { get; set; }
+
+    public string? PrimaryGenreName { get; set; }
+    public Genre? PrimaryGenre { get; set; }
 }

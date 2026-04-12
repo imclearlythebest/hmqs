@@ -25,7 +25,7 @@
         {
           <tr>
             <td>@row.Track.TrackName</td>
-            <td>@row.Track.Artist.ArtistName</td>
+            <td>@(row.Track.Artist?.ArtistName ?? "Unknown Artist")</td>
             <td>@row.ScrobbledAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
             <td>@row.DurationSeconds s</td>
             <td>@Math.Round(row.Progress, 1).ToString("0.#")%</td>

@@ -32,9 +32,10 @@ public class ScrobbleController(WebAppDbContext context) : Controller
         }
 
         Track? track = _context.Tracks
-            .Include(t => t.Artist)
+            .Include(t => t.Artist!)
             .ThenInclude(a => a.PrimaryGenre)
             .Include(t => t.Genre)
+            .Include(t => t.Collection)
             .FirstOrDefault(t => t.ItunesTrackId == model.ItunesTrackId);
 
         if (track == null)
@@ -61,9 +62,34 @@ public class ScrobbleController(WebAppDbContext context) : Controller
                 {
                     ItunesArtistId = model.ItunesArtistId.HasValue && model.ItunesArtistId.Value > 0 ? model.ItunesArtistId.Value : 0,
                     ArtistName = "Unknown Artist",
+                    PrimaryGenreName = genre.GenreName,
                     PrimaryGenre = genre
                 };
                 _context.Artists.Add(artist);
+            }
+
+            var resolvedArtist = artist;
+
+            Collection? collection = null;
+            if (model.ItunesCollectionId.HasValue && model.ItunesCollectionId.Value > 0)
+            {
+                collection = _context.Albums
+                    .Include(c => c.Artist)
+                    .Include(c => c.Genre)
+                    .FirstOrDefault(c => c.ItunesCollectionId == model.ItunesCollectionId.Value);
+
+                if (collection == null)
+                {
+                    collection = new Collection
+                    {
+                        ItunesCollectionId = model.ItunesCollectionId.Value,
+                        Artist = resolvedArtist,
+                        ArtistId = resolvedArtist.Id > 0 ? resolvedArtist.Id : null,
+                        Genre = resolvedArtist.PrimaryGenre ?? genre,
+                        GenreName = (resolvedArtist.PrimaryGenre ?? genre).GenreName
+                    };
+                    _context.Albums.Add(collection);
+                }
             }
 
             track = new Track
@@ -74,8 +100,12 @@ public class ScrobbleController(WebAppDbContext context) : Controller
                 Year = 0,
                 PreviewUrl = string.Empty,
                 ArtworkUrl = string.Empty,
-                Artist = artist,
-                Genre = artist.PrimaryGenre ?? genre
+                ArtistId = resolvedArtist.Id > 0 ? resolvedArtist.Id : null,
+                Artist = resolvedArtist,
+                GenreName = (resolvedArtist.PrimaryGenre ?? genre).GenreName,
+                Genre = resolvedArtist.PrimaryGenre ?? genre,
+                CollectionId = collection?.Id > 0 ? collection.Id : null,
+                Collection = collection
             };
             _context.Tracks.Add(track);
         }
@@ -90,10 +120,38 @@ public class ScrobbleController(WebAppDbContext context) : Controller
             {
                 track.Artist.ItunesArtistId = model.ItunesArtistId.Value;
             }
+
+            if (track.Collection == null && model.ItunesCollectionId.HasValue && model.ItunesCollectionId.Value > 0)
+            {
+                var collection = _context.Albums
+                    .Include(c => c.Artist)
+                    .Include(c => c.Genre)
+                    .FirstOrDefault(c => c.ItunesCollectionId == model.ItunesCollectionId.Value);
+
+                if (collection == null)
+                {
+                    collection = new Collection
+                    {
+                        ItunesCollectionId = model.ItunesCollectionId.Value,
+                        Artist = track.Artist,
+                        ArtistId = track.ArtistId,
+                        Genre = track.Genre,
+                        GenreName = track.GenreName
+                    };
+                    _context.Albums.Add(collection);
+                }
+
+                track.Collection = collection;
+                if (collection.Id > 0)
+                {
+                    track.CollectionId = collection.Id;
+                }
+            }
         }
 
         var scrobble = new Scrobble
         {
+            UserId = user.Id,
             User = user,
             Track = track,
             ScrobbledAt = DateTime.Now,
@@ -123,7 +181,7 @@ public class ScrobbleController(WebAppDbContext context) : Controller
 
         if (!string.IsNullOrWhiteSpace(userId))
         {
-            query = query.Where(s => s.User != null && s.User.Id == userId);
+            query = query.Where(s => s.UserId == userId);
         }
 
         var history = query

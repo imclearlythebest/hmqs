@@ -6,6 +6,36 @@
         state.currentIndex = Number.isInteger(state.currentIndex) ? state.currentIndex : -1;
         state.isShuffle = !!state.isShuffle;
         state.isLoop = !!state.isLoop;
+        state.listenedSeconds = Number.isFinite(state.listenedSeconds) ? state.listenedSeconds : 0;
+        state.listenStartedAt = Number.isFinite(state.listenStartedAt) ? state.listenStartedAt : null;
+
+        function beginListeningWindow() {
+            if (!state.listenStartedAt) {
+                state.listenStartedAt = Date.now();
+            }
+        }
+
+        function pauseListeningWindow() {
+            if (!state.listenStartedAt) {
+                return;
+            }
+
+            const delta = Math.max(0, (Date.now() - state.listenStartedAt) / 1000);
+            state.listenedSeconds += delta;
+            state.listenStartedAt = null;
+        }
+
+        function getListenedSeconds() {
+            const activeWindow = state.listenStartedAt
+                ? Math.max(0, (Date.now() - state.listenStartedAt) / 1000)
+                : 0;
+            return Math.max(0, Math.round(state.listenedSeconds + activeWindow));
+        }
+
+        function resetListenedSeconds() {
+            state.listenedSeconds = 0;
+            state.listenStartedAt = null;
+        }
 
         async function readTrackMetadata(fileName) {
             try {
@@ -35,22 +65,9 @@
                     metadata = {};
                 }
 
-                if (!Number.isFinite(metadata.itunesTrackId) || metadata.itunesTrackId <= 0) {
+                const payload = window.hmqsClient.buildScrobblePayload(metadata, progress, durationSeconds);
+                if (!payload) {
                     return;
-                }
-
-                const payload = {
-                    itunesTrackId: metadata.itunesTrackId,
-                    progress,
-                    durationSeconds
-                };
-
-                if (Number.isFinite(metadata.itunesArtistId) && metadata.itunesArtistId > 0) {
-                    payload.itunesArtistId = metadata.itunesArtistId;
-                }
-
-                if (Number.isFinite(metadata.itunesCollectionId) && metadata.itunesCollectionId > 0) {
-                    payload.itunesCollectionId = metadata.itunesCollectionId;
                 }
 
                 await fetch('/Scrobble/Submit', {
@@ -145,9 +162,7 @@
                 return;
             }
 
-            const elapsed = state.lastTrackStart
-                ? Math.max(0, Math.round((Date.now() - state.lastTrackStart) / 1000))
-                : 0;
+            const elapsed = getListenedSeconds();
             const progress = state.currentAudio.duration > 0
                 ? Math.min(100, Math.max(0, Math.round((state.currentAudio.currentTime / state.currentAudio.duration) * 100)))
                 : 0;
@@ -173,6 +188,8 @@
 
                 state.currentTrackFileName = fileName;
                 state.lastTrackStart = Date.now();
+                resetListenedSeconds();
+                beginListeningWindow();
                 const metadata = await readTrackMetadata(fileName);
                 if (state.playbackQueue.length) {
                     const idx = state.playbackQueue.indexOf(fileName);
@@ -212,6 +229,7 @@
                 window.dispatchEvent(new CustomEvent('playback-state-changed', { detail: getPlaybackState() }));
 
                 state.currentAudio.addEventListener('ended', () => {
+                    pauseListeningWindow();
                     URL.revokeObjectURL(fileUrl);
 
                     if (state.isLoop) {
@@ -229,12 +247,14 @@
         function pauseMusic() {
             if (state.currentAudio) {
                 state.currentAudio.pause();
+                pauseListeningWindow();
             }
         }
 
         function resumeMusic() {
             if (state.currentAudio) {
                 state.currentAudio.play();
+                beginListeningWindow();
             }
         }
 

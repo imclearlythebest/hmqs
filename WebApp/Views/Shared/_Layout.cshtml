@@ -28,22 +28,24 @@
     </header>
 
     <div class="container-fluid hmqs-shell">
-      <div class="row h-100">
+      <div class="hmqs-workspace @(ViewData["HideSidebar"] as bool? == true ? "hmqs-workspace-full" : "")">
         @if (ViewData["HideSidebar"] as bool? != true)
         {
-          <aside class="col-12 col-lg-2 border-end d-none d-lg-block p-3 bg-body-tertiary">
+          <aside class="border-end d-none d-lg-flex p-3 bg-body-tertiary hmqs-sidebar">
             <partial name="_Sidebar" />
           </aside>
         }
-        <main class="@(ViewData["HideSidebar"] as bool? == true ? "col-12" : "col-12 col-lg-10") p-3 hmqs-main">
-          @RenderBody()
+        <main class="hmqs-main">
+          <div class="p-3 hmqs-content">
+            @RenderBody()
+          </div>
         </main>
       </div>
     </div>
 
     @if (ViewData["HidePlayer"] as bool? != true)
     {
-      <footer class="border-top bg-body-tertiary p-2">
+      <footer class="hmqs-player-bar border-top p-2">
         <partial name="_Player" />
       </footer>
     }

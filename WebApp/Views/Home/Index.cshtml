@@ -18,7 +18,7 @@
                 <span class="text-body-secondary small" x-text="loading ? 'Refreshing...' : `${files.length} track(s)`"></span>
             </div>
 
-            <div class="alert alert-secondary py-2 d-flex justify-content-between align-items-center" x-show="selectedPlaylist">
+            <div class="hmqs-panel hmqs-playlist-banner py-2 px-3 mb-3 d-flex justify-content-between align-items-center" x-cloak x-show.important="selectedPlaylist">
                 <span>Showing playlist: <strong x-text="selectedPlaylist"></strong></span>
                 <button type="button"
                         class="btn btn-sm"
@@ -84,7 +84,7 @@
                                         <button x-on:click="openMetadataEditor(file)" class="btn btn-sm btn-link hmqs-icon-btn" :title="file.hasMetadata ? 'Edit metadata' : 'Add metadata'">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
-                                        <button x-show="!selectedPlaylist" x-on:click="openAddToPlaylistModal(file.name)" class="btn btn-sm btn-link hmqs-icon-btn" title="Add to playlist">
+                                        <button x-show="!selectedPlaylist" x-on:click="openAddToPlaylistModal(file)" class="btn btn-sm btn-link hmqs-icon-btn" title="Add to playlist">
                                             <i class="fa-solid fa-circle-plus"></i>
                                         </button>
                                         <button x-show="selectedPlaylist" x-on:click="removeFromPlaylist(file.name, index)" class="btn btn-sm btn-link hmqs-icon-btn hmqs-icon-btn-danger" title="Remove from playlist">
@@ -111,7 +111,7 @@
                         </div>
                         <div class="modal-body">
                             <p class="small text-body-secondary mb-2">Track</p>
-                            <p class="mb-3 fw-semibold" x-text="pendingPlaylistFile || 'No track selected'"></p>
+                            <p class="mb-3 fw-semibold" x-text="pendingPlaylistLabel || 'No track selected'"></p>
 
                             <div class="mb-3">
                                 <label class="form-label" for="hmqsPlaylistSelect">Existing playlist</label>

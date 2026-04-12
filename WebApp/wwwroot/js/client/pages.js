@@ -36,11 +36,13 @@
             playlistTarget: '',
             newPlaylistName: '',
             pendingPlaylistFile: null,
+            pendingPlaylistLabel: '',
             addingToPlaylist: false,
             playlistModal: null,
             dragIndex: null,
             dragOverIndex: null,
             reorderMode: false,
+            suppressNextLoading: false,
 
             async init() {
                 await this.loadFiles();
@@ -49,7 +51,8 @@
                     this.playlistModal = bootstrap.Modal.getOrCreateInstance(this.$refs.playlistModal);
                 }
                 window.addEventListener('folder-changed', async () => {
-                    await this.loadFiles();
+                    await this.loadFiles({ silent: this.suppressNextLoading });
+                    this.suppressNextLoading = false;
                 });
                 window.addEventListener('playlist-selected', async e => {
                     this.selectedPlaylist = e.detail?.playlist || null;
@@ -58,8 +61,11 @@
                 });
             },
 
-            async loadFiles() {
-                this.loading = true;
+            async loadFiles(options = {}) {
+                const silent = !!options.silent;
+                if (!silent) {
+                    this.loading = true;
+                }
                 const allFiles = await window.hmqsClient.getCurrentFolderFiles();
 
                 if (!this.selectedPlaylist) {
@@ -124,12 +130,13 @@
                 await window.hmqsClient.playMusicFile(fileName);
             },
 
-            async addToPlaylist(fileName) {
-                await this.openAddToPlaylistModal(fileName);
+            async addToPlaylist(file) {
+                await this.openAddToPlaylistModal(file);
             },
 
-            async openAddToPlaylistModal(fileName) {
-                this.pendingPlaylistFile = fileName;
+            async openAddToPlaylistModal(file) {
+                this.pendingPlaylistFile = file?.name || '';
+                this.pendingPlaylistLabel = this.displayTrackName(file) || file?.name || '';
                 this.newPlaylistName = '';
                 this.playlistTarget = '';
 
@@ -229,6 +236,7 @@
                 const [moved] = reordered.splice(from, 1);
                 reordered.splice(to, 0, moved);
                 this.files = reordered;
+                this.suppressNextLoading = true;
 
                 await window.hmqsClient.savePlaylistTracks(
                     this.selectedPlaylist,

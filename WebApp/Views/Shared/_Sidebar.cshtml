@@ -1,0 +1,97 @@
+<div x-data="window.hmqsPages.sidebarPlaylists()" x-init="init()" class="d-flex flex-column gap-3">
+	<div>
+		<h6 class="text-uppercase text-body-secondary small mb-2">Library View</h6>
+		<button type="button" class="btn btn-sm w-100 mb-2" :class="selectedPlaylist ? 'btn-outline-secondary' : 'btn-primary'" x-on:click="showAllSongs()">
+			<i class="fa-solid fa-music me-1"></i>All Songs
+		</button>
+	</div>
+
+	<div>
+		<div class="d-flex justify-content-between align-items-center mb-2">
+			<h6 class="text-uppercase text-body-secondary small m-0">Playlists</h6>
+			<button type="button" class="btn btn-sm btn-link hmqs-icon-btn" title="Create playlist" x-on:click="openCreatePlaylistModal()">
+				<i class="fa-solid fa-plus"></i>
+			</button>
+		</div>
+
+		<div class="list-group list-group-flush" x-show="playlists.length > 0">
+			<template x-for="playlist in playlists" :key="playlist">
+				<div class="list-group-item hmqs-playlist-item hmqs-playlist-row px-2 py-2 mb-1" :class="selectedPlaylist === playlist ? 'hmqs-playlist-row-active' : ''" x-on:click="selectPlaylist(playlist)">
+					<div class="d-flex align-items-center justify-content-between gap-2">
+						<button type="button" class="btn btn-sm text-start flex-grow-1 hmqs-playlist-name" x-on:click.stop="selectPlaylist(playlist)">
+							<span x-text="playlist"></span>
+						</button>
+						<div class="hmqs-playlist-actions" role="group" x-on:click.stop>
+							<button type="button" class="btn btn-sm btn-link hmqs-icon-btn" title="Rename" x-on:click.stop="openRenamePlaylistModal(playlist)">
+								<i class="fa-solid fa-pen"></i>
+							</button>
+							<button type="button" class="btn btn-sm btn-link hmqs-icon-btn hmqs-icon-btn-danger" title="Delete" x-on:click.stop="openDeletePlaylistModal(playlist)">
+								<i class="fa-solid fa-trash"></i>
+							</button>
+						</div>
+					</div>
+				</div>
+			</template>
+		</div>
+
+		<div class="text-body-secondary small" x-show="playlists.length === 0">
+			No playlists yet. Create one with the + button.
+		</div>
+	</div>
+
+	<div class="modal fade" tabindex="-1" aria-hidden="true" x-ref="createPlaylistModal">
+		<div class="modal-dialog modal-dialog-centered modal-sm">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Create Playlist</h5>
+					<button type="button" class="btn-close" x-on:click="closeCreatePlaylistModal()" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<label class="form-label" for="hmqsCreatePlaylistName">Playlist name</label>
+					<input id="hmqsCreatePlaylistName" type="text" class="form-control" x-model="createPlaylistName" placeholder="My Playlist">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-secondary" x-on:click="closeCreatePlaylistModal()">Cancel</button>
+					<button type="button" class="btn btn-primary" x-on:click="confirmCreatePlaylist()" :disabled="!createPlaylistName.trim()">Create</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" tabindex="-1" aria-hidden="true" x-ref="renamePlaylistModal">
+		<div class="modal-dialog modal-dialog-centered modal-sm">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Rename Playlist</h5>
+					<button type="button" class="btn-close" x-on:click="closeRenamePlaylistModal()" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<label class="form-label" for="hmqsRenamePlaylistName">New name</label>
+					<input id="hmqsRenamePlaylistName" type="text" class="form-control" x-model="renamePlaylistName" placeholder="Playlist name">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-secondary" x-on:click="closeRenamePlaylistModal()">Cancel</button>
+					<button type="button" class="btn btn-primary" x-on:click="confirmRenamePlaylist()" :disabled="!renamePlaylistName.trim() || renamePlaylistName.trim() === renameSourceName">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" tabindex="-1" aria-hidden="true" x-ref="deletePlaylistModal">
+		<div class="modal-dialog modal-dialog-centered modal-sm">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Delete Playlist</h5>
+					<button type="button" class="btn-close" x-on:click="closeDeletePlaylistModal()" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<p class="mb-0">Delete <strong x-text="deletePlaylistName"></strong>?</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-secondary" x-on:click="closeDeletePlaylistModal()">Cancel</button>
+					<button type="button" class="btn btn-danger" x-on:click="confirmDeletePlaylist()">Delete</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

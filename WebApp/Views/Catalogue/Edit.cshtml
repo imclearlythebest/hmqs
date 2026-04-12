@@ -1,31 +1,81 @@
-@model RegisterDto
+@model CatalogueDto
 @{
-  ViewData["Title"] = "Register";
+  ViewData["Title"] = "Edit Metadata";
 }
 
 @section Styles {
   <style>
-    body > main {
-      padding: 2rem 10rem 0rem 10rem;
+    .metadata-editor {
+      max-width: 840px;
+      margin: 0 auto 6rem auto;
     }
   </style>
 }
 
-<form asp-action="Editing MetaData" asp-controller="Auth" method="post">
-  <fieldset>
-    <h3>Register</h3>
-    <label for="trackTitle">Track Title:</label>
-    <input type="text" id="trackTitle" name="trackTitle" required>
-    <label for="artist">Artist:</label>
-    <input type="text" id="artist" name="artist" required>
-    <label for="album">Album:</label>
-    <input type="text" id="album" name="album" required>
-    <label for="genre">Genre:</label>
-    <input type="text" id="genre" name="genre" required>
-    <label for="imageUrl">ImageUrl:</label>
-    <input type="text" id="imageUrl" name="imageUrl" required>
+<article class="metadata-editor hmqs-panel p-4"
+         data-file-name="@ViewData["FileName"]"
+         x-data="window.hmqsPages.metadataEditorFromElement($el)"
+         x-init="init()">
+  <header class="mb-3">
+    <h4 class="mb-1">Edit Metadata</h4>
+    <p class="text-body-secondary small mb-0">File: @ViewData["FileName"]</p>
+  </header>
 
-    <button type="submit">Save Changes</button>
-    <div asp-validation-summary="All"></div>
-  </fieldset>
-</form>
+  <div class="alert alert-danger" role="alert" x-show="error" x-text="error"></div>
+  <div class="alert alert-success" role="alert" x-show="success" x-text="success"></div>
+
+  <form x-on:submit.prevent="save()" class="row g-3">
+    <div class="col-md-4">
+      <label for="itunesTrackId" class="form-label">iTunes Track Id</label>
+      <input id="itunesTrackId" class="form-control" type="number" x-model.number="form.itunesTrackId" min="0" placeholder="Optional" />
+    </div>
+
+    <div class="col-md-8">
+      <label for="trackTitle" class="form-label">Track Title</label>
+      <input id="trackTitle" class="form-control" type="text" x-model="form.trackTitle" />
+    </div>
+
+    <div class="col-md-4">
+      <label for="itunesArtistId" class="form-label">iTunes Artist Id</label>
+      <input id="itunesArtistId" class="form-control" type="number" x-model.number="form.itunesArtistId" min="0" />
+    </div>
+
+    <div class="col-md-8">
+      <label for="artist" class="form-label">Artist</label>
+      <input id="artist" class="form-control" type="text" x-model="form.artist" />
+    </div>
+
+    <div class="col-md-4">
+      <label for="itunesCollectionId" class="form-label">iTunes Collection Id</label>
+      <input id="itunesCollectionId" class="form-control" type="number" x-model.number="form.itunesCollectionId" min="0" />
+    </div>
+
+    <div class="col-md-8">
+      <label for="album" class="form-label">Album</label>
+      <input id="album" class="form-control" type="text" x-model="form.album" />
+    </div>
+
+    <div class="col-md-6">
+      <label for="genre" class="form-label">Genre</label>
+      <input id="genre" class="form-control" type="text" x-model="form.genre" />
+    </div>
+
+    <div class="col-md-2">
+      <label for="year" class="form-label">Year</label>
+      <input id="year" class="form-control" type="number" x-model.number="form.year" min="0" />
+    </div>
+
+    <div class="col-md-6">
+      <label for="imageUrl" class="form-label">Image Url</label>
+      <input id="imageUrl" class="form-control" type="url" x-model="form.imageUrl" placeholder="https://..." />
+    </div>
+
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-sm btn-primary" :disabled="saving" x-text="saving ? 'Saving...' : 'Save'"></button>
+      <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary">Back</a>
+    </div>
+  </form>
+</article>
+
+@section Scripts {
+}

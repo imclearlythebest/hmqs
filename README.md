@@ -26,7 +26,7 @@
     - Audio playback queue and player state
 
 ## Core Conventions
-- Metadata is stored as sidecar JSON per track: `<filename>.hmqsmeta`
+- Metadata is stored as sparse sidecar JSON per track: `<filename>.hmqsmeta`
 - Playlist tracks are stored in newline-separated files: `<playlist>.plist`
 - Client features are exposed through one facade: `window.hmqsClient`
 - Alpine page factories live in `WebApp/wwwroot/js/client/pages.js`
@@ -38,6 +38,7 @@
 - Local library view with sortable track list and metadata preview
 - Metadata editor with iTunes IDs, title/artist/album/genre/year/image URL
 - Playlist create/rename/delete and add/remove track flow
+- Duplicate tracks in playlists supported with index-safe next/previous progression
 - Bottom player with seekbar, shuffle/loop, and now-playing metadata
 - Scrobble submit endpoint + authenticated history view (ID-focused payload)
 

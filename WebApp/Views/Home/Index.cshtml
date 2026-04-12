@@ -47,7 +47,7 @@
                             <tr class="hmqs-track-row"
                                 :class="rowDragClass(index)"
                                 :draggable="!!selectedPlaylist && reorderMode"
-                                x-on:click="playFile(file.name)"
+                                x-on:click="playFile(file.name, index)"
                                 x-on:dragstart="startDrag(index)"
                                 x-on:dragover.prevent="setDragOver(index)"
                                 x-on:drop.prevent="dropDrag(index)"

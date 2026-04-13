@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using WebApp.Models.Dtos;
 
 namespace WebApp.Controllers;
 public class CatalogueController() : Controller
@@ -16,8 +15,6 @@ public class CatalogueController() : Controller
 		ViewData["HideSidebar"] = true;
 		ViewData["FileName"] = fileName;
 
-		var model = new CatalogueDto();
-
-		return View(model);
+		return View();
 	}
 }

@@ -48,6 +48,7 @@
         buildScrobblePayload: metadata.buildScrobblePayload,
         normalizeMetadataRecord: metadata.normalizeMetadataRecord,
         toSparseMetadataRecord: metadata.toSparseMetadataRecord,
+        lookupMetadataCandidatesFromItunes: metadata.lookupMetadataCandidatesFromItunes,
         editMetadata: metadata.editMetadata,
         listPlaylists: playlist.listPlaylists,
         getPlaylistTracks: playlist.getPlaylistTracks,

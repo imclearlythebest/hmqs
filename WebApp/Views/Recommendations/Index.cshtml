@@ -1,21 +1,51 @@
 @{
-  ViewData["Title"] = "Global Recommendations";
+  ViewData["Title"] = "Music Recommendations";
 }
 
 <div class="hmqs-panel p-3 p-lg-4">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h5 class="m-0">Global Recommendations</h5>
-    <span class="small text-body-secondary">iTunes RSS feed via HTMX</span>
+    <h5 class="m-0">Music Recommendations</h5>
+    <span class="small text-body-secondary">Explore now, personalize next</span>
   </div>
 
-  <div class="alert alert-secondary mb-3">
-    Scroll down to load more. Up to 50 recommendations are available.
-  </div>
+  <ul class="nav nav-tabs hmqs-recommendation-tabs" id="hmqsRecommendationTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="hmqs-explore-tab" data-bs-toggle="tab" data-bs-target="#hmqs-explore-panel" type="button" role="tab" aria-controls="hmqs-explore-panel" aria-selected="true">
+        Explore
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="hmqs-for-you-tab" data-bs-toggle="tab" data-bs-target="#hmqs-for-you-panel" type="button" role="tab" aria-controls="hmqs-for-you-panel" aria-selected="false">
+        For You
+      </button>
+    </li>
+  </ul>
 
-  <div id="hmqs-recommendation-list"
-       class="hmqs-recommendation-grid"
-       hx-get="@Url.Action("Feed", "Recommendations", new { page = 1 })"
-       hx-trigger="load"
-       hx-swap="beforeend">
+  <div class="tab-content border border-top-0 rounded-bottom p-3 p-lg-4">
+    <section class="tab-pane fade show active" id="hmqs-explore-panel" role="tabpanel" aria-labelledby="hmqs-explore-tab" tabindex="0">
+      <div class="alert alert-secondary mb-3">
+        Global recommendations from iTunes RSS. Scroll down to load more (up to 50).
+      </div>
+
+      <div id="hmqs-recommendation-list"
+           class="hmqs-recommendation-grid"
+           hx-get="@Url.Action("Feed", "Recommendations", new { page = 1 })"
+           hx-trigger="load once"
+           hx-swap="beforeend">
+      </div>
+    </section>
+
+    <section class="tab-pane fade" id="hmqs-for-you-panel" role="tabpanel" aria-labelledby="hmqs-for-you-tab" tabindex="0">
+      <div class="alert alert-info mb-3">
+        Collaborative filtering recommendations based on your listening overlap with similar users.
+      </div>
+
+      <div id="hmqs-for-you-list"
+           class="hmqs-recommendation-grid"
+           hx-get="@Url.Action("ForYouFeed", "Recommendations", new { page = 1 })"
+           hx-trigger="revealed once"
+           hx-swap="beforeend">
+      </div>
+    </section>
   </div>
 </div>

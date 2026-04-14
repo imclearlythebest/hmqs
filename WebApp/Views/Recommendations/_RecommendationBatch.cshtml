@@ -6,6 +6,12 @@
     @Model.ErrorMessage
   </div>
 }
+else if (!string.IsNullOrWhiteSpace(Model.InfoMessage) && Model.Items.Count == 0)
+{
+  <div class="alert alert-secondary" role="alert">
+    @Model.InfoMessage
+  </div>
+}
 else
 {
   foreach (var item in Model.Items)
@@ -42,7 +48,7 @@ else
   if (Model.NextPage.HasValue)
   {
     <div class="hmqs-rec-sentinel"
-         hx-get="@Url.Action("Feed", "Recommendations", new { page = Model.NextPage.Value })"
+         hx-get="@Url.Action(Model.FeedAction, "Recommendations", new { page = Model.NextPage.Value })"
          hx-trigger="revealed"
          hx-swap="outerHTML">
       <div class="text-center text-body-secondary py-3">Loading more recommendations...</div>

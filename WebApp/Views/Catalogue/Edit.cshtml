@@ -70,8 +70,32 @@
     </div>
 
     <div class="col-12 d-flex gap-2">
+      <button type="button"
+              class="btn btn-sm btn-outline-primary"
+              :disabled="autoFilling || saving"
+              x-on:click="autoFillFromItunes()"
+              x-text="autoFilling ? 'Searching...' : 'Find iTunes Matches'"></button>
       <button type="submit" class="btn btn-sm btn-primary" :disabled="saving" x-text="saving ? 'Saving...' : 'Save'"></button>
       <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary">Back</a>
+    </div>
+
+    <div class="col-12" x-show="candidates.length > 0">
+      <div class="border rounded p-3 bg-body-tertiary">
+        <p class="small text-body-secondary mb-2">Pick the best match:</p>
+        <template x-for="(candidate, index) in candidates" :key="candidate.metadata.itunesTrackId || index">
+          <div class="d-flex align-items-start justify-content-between gap-3 border rounded p-2 mb-2 bg-body">
+            <div class="d-flex gap-2 align-items-start">
+              <img x-show="candidate.imageUrl" :src="candidate.imageUrl" alt="Artwork" class="rounded" style="width:48px;height:48px;object-fit:cover;" />
+              <div>
+                <div class="fw-semibold" x-text="candidate.trackTitle || 'Unknown Title'"></div>
+                <div class="small text-body-secondary" x-text="candidate.artist || 'Unknown Artist'"></div>
+                <div class="small text-body-secondary" x-text="candidate.album || 'Unknown Album'"></div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success" x-on:click="applyCandidate(candidate)">Use This</button>
+          </div>
+        </template>
+      </div>
     </div>
   </form>
 </article>

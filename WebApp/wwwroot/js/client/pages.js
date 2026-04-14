@@ -415,8 +415,22 @@
     }
 
     function metadataEditor(fileName) {
+        function getReturnUrl() {
+            const params = new URLSearchParams(window.location.search || '');
+            const candidate = (params.get('returnUrl') || '').trim();
+
+            // Only allow local app paths.
+            if (candidate && candidate.startsWith('/') && !candidate.startsWith('//')) {
+                return candidate;
+            }
+
+            return '/';
+        }
+
         return {
             saving: false,
+            autoFilling: false,
+            candidates: [],
             error: '',
             success: '',
             form: {
@@ -431,6 +445,11 @@
                 imageUrl: ''
             },
 
+            resetFeedback() {
+                this.error = '';
+                this.success = '';
+            },
+
             async init() {
                 try {
                     await window.hmqsClient.initializePicker();
@@ -441,14 +460,38 @@
                 }
             },
 
-            async save() {
+            async autoFillFromItunes() {
+                this.resetFeedback();
+                this.candidates = [];
+
+                this.autoFilling = true;
+                try {
+                    const lookedUp = await window.hmqsClient.lookupMetadataCandidatesFromItunes(fileName, this.form);
+                    this.candidates = Array.isArray(lookedUp) ? lookedUp : [];
+                    this.success = `Found ${this.candidates.length} iTunes match${this.candidates.length === 1 ? '' : 'es'}. Select one below.`;
+                } catch (err) {
+                    this.error = err?.message || 'Failed to auto-fill metadata from iTunes.';
+                } finally {
+                    this.autoFilling = false;
+                }
+            },
+
+            applyCandidate(candidate) {
+                const metadata = window.hmqsClient.normalizeMetadataRecord(candidate?.metadata || {});
+                this.form = metadata;
+                this.candidates = [];
                 this.error = '';
-                this.success = '';
+                this.success = 'Selection applied. Review and save when ready.';
+            },
+
+            async save() {
+                this.resetFeedback();
 
                 this.saving = true;
                 try {
                     await window.hmqsClient.saveMetadataFile(fileName, this.form);
-                    this.success = 'Metadata saved.';
+                    this.candidates = [];
+                    window.location.assign(getReturnUrl());
                 } catch (err) {
                     this.error = err?.message || 'Failed to save metadata.';
                 } finally {

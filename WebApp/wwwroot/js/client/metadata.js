@@ -2,6 +2,8 @@
     window.hmqsModules = window.hmqsModules || {};
 
     function createMetadataModule(getActiveFolder, notifyFolderChanged) {
+        const ITUNES_SEARCH_LIMIT = 5;
+
         function normalizeText(value) {
             return typeof value === 'string' ? value.trim() : '';
         }
@@ -90,6 +92,109 @@
             return payload;
         }
 
+        function buildSearchTermFromFileName(fileName) {
+            const raw = normalizeText(fileName)
+                .replace(/\.[^.]+$/, '')
+                .replace(/[._-]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            return raw;
+        }
+
+        function buildSearchTerm(fileName, metadata) {
+            const normalized = normalizeMetadataRecord(metadata || {});
+            const metadataTerm = [
+                normalized.trackTitle,
+                normalized.artist,
+                normalized.album,
+                normalized.genre
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            if (metadataTerm) {
+                return metadataTerm;
+            }
+
+            return buildSearchTermFromFileName(fileName);
+        }
+
+        function mapItunesResultToMetadata(result) {
+            const yearValue = Number.parseInt(`${result?.releaseDate || ''}`.slice(0, 4), 10);
+
+            return normalizeMetadataRecord({
+                itunesTrackId: result?.trackId,
+                trackTitle: result?.trackName,
+                itunesArtistId: result?.artistId,
+                artist: result?.artistName,
+                itunesCollectionId: result?.collectionId,
+                album: result?.collectionName,
+                genre: result?.primaryGenreName,
+                year: Number.isFinite(yearValue) ? yearValue : null,
+                imageUrl: result?.artworkUrl100 || ''
+            });
+        }
+
+        function mapItunesResultToCandidate(result) {
+            return {
+                trackTitle: normalizeText(result?.trackName),
+                artist: normalizeText(result?.artistName),
+                album: normalizeText(result?.collectionName),
+                year: normalizeOptionalId(Number.parseInt(`${result?.releaseDate || ''}`.slice(0, 4), 10)),
+                imageUrl: normalizeText(result?.artworkUrl100),
+                metadata: mapItunesResultToMetadata(result)
+            };
+        }
+
+        function buildItunesSearchEndpoint(term) {
+            return `https://itunes.apple.com/search?media=music&entity=song&limit=${ITUNES_SEARCH_LIMIT}&term=${encodeURIComponent(term)}`;
+        }
+
+        async function fetchJson(endpoint, networkErrorMessage, invalidPayloadErrorMessage) {
+            let response;
+            try {
+                response = await fetch(endpoint, { method: 'GET' });
+            } catch {
+                throw new Error(networkErrorMessage);
+            }
+
+            if (!response.ok) {
+                throw new Error('iTunes lookup failed.');
+            }
+
+            try {
+                return await response.json();
+            } catch {
+                throw new Error(invalidPayloadErrorMessage);
+            }
+        }
+
+        async function lookupMetadataCandidatesFromItunes(fileName, metadata) {
+            const term = buildSearchTerm(fileName, metadata);
+            if (!term) {
+                throw new Error('Could not build a lookup term from metadata or file name.');
+            }
+
+            const endpoint = buildItunesSearchEndpoint(term);
+            const body = await fetchJson(
+                endpoint,
+                'Could not reach iTunes lookup service.',
+                'Received invalid response from iTunes lookup service.'
+            );
+
+            const results = Array.isArray(body?.results) ? body.results : [];
+            if (!results.length) {
+                throw new Error('No iTunes match found for this file.');
+            }
+
+            return results
+                .slice(0, ITUNES_SEARCH_LIMIT)
+                .map(mapItunesResultToCandidate);
+        }
+
         function requireActiveFolder() {
             const activeFolder = getActiveFolder();
             if (!activeFolder || !activeFolder.handle) {
@@ -161,7 +266,8 @@
         }
 
         async function editMetadata(fileName) {
-            const target = `/Catalogue/Edit?fileName=${encodeURIComponent(fileName)}`;
+            const current = `${window.location.pathname || '/'}${window.location.search || ''}${window.location.hash || ''}`;
+            const target = `/Catalogue/Edit?fileName=${encodeURIComponent(fileName)}&returnUrl=${encodeURIComponent(current)}`;
             window.location.assign(target);
         }
 
@@ -172,7 +278,8 @@
             editMetadata,
             buildScrobblePayload,
             normalizeMetadataRecord,
-            toSparseMetadataRecord
+            toSparseMetadataRecord,
+            lookupMetadataCandidatesFromItunes
         };
     }
 

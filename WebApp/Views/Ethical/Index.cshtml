@@ -1,0 +1,73 @@
+@model WebApp.Models.Dtos.EthicalCalculatorViewDto
+
+@{
+    ViewData["Title"] = "Ethical Calculator";
+}
+
+<div class="hmqs-panel p-3 p-lg-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h5 class="m-0">Ethical Calculator</h5>
+        <span class="small text-body-secondary">Artist-only scoring from scrobbling history</span>
+    </div>
+
+    @if (TempData["EthicalMessage"] is string message && !string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-success">@message</div>
+    }
+
+    <form method="get" asp-action="Index" asp-controller="Ethical" class="row g-2 align-items-end mb-3">
+        <div class="col-sm-6 col-md-4 col-lg-3">
+            <label class="form-label" for="budget">Monthly budget</label>
+            <input id="budget" name="budget" type="number" step="0.01" min="1" class="form-control" value="@Model.MonthlyBudget" />
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" type="submit">Recalculate</button>
+        </div>
+    </form>
+
+    @if (Model.Artists.Count == 0)
+    {
+        <div class="alert alert-info mb-0">
+            No artist listening data found yet. Play and scrobble more tracks first.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Artist</th>
+                        <th class="text-end">Listened</th>
+                        <th class="text-end">Ignored</th>
+                        <th class="text-end">Inverse Popularity</th>
+                        <th class="text-end">Ethical Score</th>
+                        <th class="text-end">Suggested Budget</th>
+                        <th class="text-end">Demo Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var artist in Model.Artists)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@artist.ArtistName</td>
+                            <td class="text-end">@artist.UserListenedSeconds s</td>
+                            <td class="text-end">@artist.IgnoredCount</td>
+                            <td class="text-end">@artist.InversePopularity</td>
+                            <td class="text-end">@artist.EthicalScore</td>
+                            <td class="text-end fw-semibold">@artist.SuggestedBudget</td>
+                            <td class="text-end">
+                                <form method="post" asp-action="DummyPurchase" asp-controller="Ethical" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="purchasedArtistId" value="@artist.ArtistId" />
+                                    <input type="hidden" name="budget" value="@Model.MonthlyBudget" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Dummy purchased this artist</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

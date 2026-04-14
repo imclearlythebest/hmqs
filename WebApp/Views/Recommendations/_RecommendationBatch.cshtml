@@ -1,0 +1,57 @@
+@model WebApp.Models.Dtos.RecommendationBatchDto
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+  <div class="alert alert-warning" role="alert">
+    @Model.ErrorMessage
+  </div>
+}
+else
+{
+  foreach (var item in Model.Items)
+  {
+    var title = string.IsNullOrWhiteSpace(item.Title) ? "Unknown title" : item.Title;
+    var artist = string.IsNullOrWhiteSpace(item.Artist) ? "Unknown artist" : item.Artist;
+
+    <article class="hmqs-recommendation-card">
+      <div class="hmqs-recommendation-cover">
+        @if (!string.IsNullOrWhiteSpace(item.ArtworkUrl))
+        {
+          <img src="@item.ArtworkUrl" alt="@($"{title} cover")" loading="lazy">
+        }
+        else
+        {
+          <div class="hmqs-cover-placeholder" aria-hidden="true">
+            <i class="fa-solid fa-music"></i>
+          </div>
+        }
+      </div>
+      <div class="hmqs-recommendation-body">
+        <h6 class="m-0 text-truncate" title="@title">@title</h6>
+        <p class="text-body-secondary m-0 text-truncate" title="@artist">@artist</p>
+        @if (!string.IsNullOrWhiteSpace(item.AppleMusicUrl))
+        {
+          <a class="btn btn-sm btn-outline-primary mt-2" href="@item.AppleMusicUrl" target="_blank" rel="noopener noreferrer">
+            Open in Apple Music
+          </a>
+        }
+      </div>
+    </article>
+  }
+
+  if (Model.NextPage.HasValue)
+  {
+    <div class="hmqs-rec-sentinel"
+         hx-get="@Url.Action("Feed", "Recommendations", new { page = Model.NextPage.Value })"
+         hx-trigger="revealed"
+         hx-swap="outerHTML">
+      <div class="text-center text-body-secondary py-3">Loading more recommendations...</div>
+    </div>
+  }
+  else if (Model.Items.Count > 0)
+  {
+    <div class="alert alert-light border text-center mt-3 mb-0">
+      No more recommendations to load.
+    </div>
+  }
+}

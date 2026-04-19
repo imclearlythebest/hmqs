@@ -1,3 +1,5 @@
 <Solution>
+  <Folder Name="/Services/" />
+  <Project Path="Hmqs.Api/Hmqs.Api.csproj" />
   <Project Path="WebApp/WebApp.csproj" />
 </Solution>

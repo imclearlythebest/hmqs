@@ -17,9 +17,11 @@ public class LocalTrack
     public virtual Listener Listener { get; set; } = null!;
     public virtual GlobalTrack? GlobalTrack { get; set; }
     public virtual ICollection<Scrobble> Scrobbles { get; set; }
+    public virtual ICollection<PlaylistTrack> PlaylistTracks { get; set; }
 
     public LocalTrack()
     {
         Scrobbles = new HashSet<Scrobble>();
+        PlaylistTracks = new HashSet<PlaylistTrack>();
     }
 }

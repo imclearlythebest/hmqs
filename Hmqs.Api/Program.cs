@@ -17,6 +17,7 @@ builder.Services.AddIdentity<Listener, IdentityRole<Guid>>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddScoped<ScrobbleService>();
+builder.Services.AddScoped<PlaylistService>();
 builder.Services.AddControllers();
 
 var app = builder.Build();

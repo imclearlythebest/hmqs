@@ -14,6 +14,11 @@
       </div>
 
       <ul class="navbar-nav align-items-lg-center gap-lg-2 mt-3 mt-lg-0">
+        <li class="nav-item me-lg-2">
+          <a class="nav-link btn btn-sm btn-outline-success text-success" asp-controller="Import" asp-action="Index">
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Import
+          </a>
+        </li>
         @if (User.Identity?.IsAuthenticated == true)
         {
           <partial name="_AvatarMenu" />

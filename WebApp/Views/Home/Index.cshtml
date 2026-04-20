@@ -20,7 +20,14 @@
 
             <div class="hmqs-panel hmqs-playlist-banner py-2 px-3 mb-3 d-flex justify-content-between align-items-center" x-cloak x-show.important="selectedPlaylist">
                 <span>Showing playlist: <strong x-text="selectedPlaylist"></strong></span>
-                <button type="button"
+                <div>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-info me-2"
+                            x-on:click="sharePlaylist()"
+                            title="Share Playlist">
+                        <i class="fa-solid fa-share-nodes me-1"></i> Share
+                    </button>
+                    <button type="button"
                         class="btn btn-sm"
                         :class="reorderMode ? 'btn-primary' : 'btn-outline-secondary'"
                         x-on:click="toggleReorderMode()"
@@ -81,6 +88,9 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="hmqs-row-actions" x-on:click.stop>
+                                        <button x-on:click="shareTrack(file)" class="btn btn-sm btn-link hmqs-icon-btn text-info" title="Share track">
+                                            <i class="fa-solid fa-share-nodes"></i>
+                                        </button>
                                         <button x-on:click="openMetadataEditor(file)" class="btn btn-sm btn-link hmqs-icon-btn" :title="file.hasMetadata ? 'Edit metadata' : 'Add metadata'">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>

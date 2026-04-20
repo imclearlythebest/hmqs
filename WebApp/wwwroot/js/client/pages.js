@@ -249,6 +249,58 @@
                 this.dragOverIndex = null;
             },
 
+            async shareTrack(file) {
+                const url = new URL(window.location.origin + '/Share/Track');
+                if (file.itunesTrackId) url.searchParams.set('itunesId', file.itunesTrackId);
+                if (file.trackTitle) url.searchParams.set('title', file.trackTitle);
+                else if (file.name) url.searchParams.set('title', file.name);
+                if (file.artist) url.searchParams.set('artist', file.artist);
+                if (file.album) url.searchParams.set('album', file.album);
+                if (file.imageUrl) url.searchParams.set('imageUrl', file.imageUrl);
+                
+                try {
+                    await navigator.clipboard.writeText(url.toString());
+                    window.alert('Share link copied to clipboard!');
+                } catch {
+                    window.open(url.toString(), '_blank');
+                }
+            },
+
+            async sharePlaylist() {
+                if (!this.selectedPlaylist || !this.files.length) return;
+                
+                const tracks = this.files.map(f => ({
+                    title: f.trackTitle || f.name || 'Unknown Track',
+                    artist: f.artist || '',
+                    album: f.album || '',
+                    itunesTrackId: f.itunesTrackId || 0,
+                    imageUrl: f.imageUrl || ''
+                }));
+                
+                try {
+                    const res = await fetch('/Share/CreatePlaylistShare', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: this.selectedPlaylist, tracks })
+                    });
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        const url = window.location.origin + '/Share/Playlist/' + data.id;
+                        try {
+                            await navigator.clipboard.writeText(url);
+                            window.alert('Playlist share link copied to clipboard!');
+                        } catch {
+                            window.open(url, '_blank');
+                        }
+                    } else {
+                        window.alert('Failed to generate share link.');
+                    }
+                } catch (e) {
+                    window.alert('Error sharing playlist: ' + e.message);
+                }
+            },
+
             rowDragClass(index) {
                 if (!this.selectedPlaylist || !this.reorderMode || this.dragIndex === null) {
                     return '';
@@ -639,12 +691,123 @@
         };
     }
 
+    function importPage() {
+        return {
+            uploadingHistory: false,
+            historySuccess: '',
+            historyError: '',
+            processingPlaylists: false,
+            playlistResult: '',
+
+            init() {},
+
+            async uploadHistory(e) {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                this.historyError = '';
+                this.historySuccess = '';
+                this.uploadingHistory = true;
+
+                try {
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        const res = await fetch('/Import/History', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!res.ok) {
+                            const err = await res.text();
+                            throw new Error(err || `Failed to upload ${file.name}`);
+                        }
+                    }
+                    this.historySuccess = `Successfully processed ${files.length} history file(s).`;
+                } catch (err) {
+                    this.historyError = err.message;
+                } finally {
+                    this.uploadingHistory = false;
+                    e.target.value = ''; // reset
+                }
+            },
+
+            async processPlaylists(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                this.playlistResult = '';
+                this.processingPlaylists = true;
+
+                try {
+                    await window.hmqsClient.initializePicker();
+                    const localFiles = await window.hmqsClient.getCurrentFolderFiles();
+                    
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    const playlists = data.playlists || [];
+                    
+                    let resultHtml = `Found ${playlists.length} playlists.<br>`;
+
+                    for (const pl of playlists) {
+                        const plName = pl.name;
+                        const items = pl.items || [];
+                        let matchedCount = 0;
+                        const matchedFileNames = [];
+
+                        for (const item of items) {
+                            if (!item.track) continue;
+                            const tName = (item.track.trackName || '').toLowerCase();
+                            // Also try to match exact artist
+                            const aName = (item.track.artistName || '').toLowerCase();
+
+                            const match = localFiles.find(lf => {
+                                const lfTitle = (lf.trackTitle || '').toLowerCase();
+                                const lfName = (lf.name || '').toLowerCase();
+                                const lfArtist = (lf.artist || '').toLowerCase();
+                                
+                                // Strict match if artist exists, otherwise loose match
+                                if (lfTitle && tName && lfTitle.includes(tName)) return true;
+                                if (lfName.includes(tName)) return true;
+                                return false;
+                            });
+
+                            if (match) {
+                                matchedFileNames.push(match.name);
+                                matchedCount++;
+                            }
+                        }
+
+                        if (matchedFileNames.length > 0) {
+                            await window.hmqsClient.savePlaylistTracks(plName, matchedFileNames);
+                            resultHtml += `<strong>${plName}</strong>: Matched ${matchedCount}/${items.length} tracks. Saved locally.<br>`;
+                        } else {
+                            resultHtml += `<strong>${plName}</strong>: No matches found.<br>`;
+                        }
+                    }
+
+                    this.playlistResult = resultHtml;
+                    window.dispatchEvent(new CustomEvent('folder-changed'));
+
+                } catch (err) {
+                    this.playlistResult = `<span class="text-danger">Error: ${err.message}</span>`;
+                } finally {
+                    this.processingPlaylists = false;
+                    e.target.value = ''; // reset
+                }
+            }
+        };
+    }
+
     window.hmqsPages = {
         pickerDropdown,
         sidebarPlaylists,
         homePage,
         metadataEditorFromElement,
         metadataEditor,
-        playerWidget
+        playerWidget,
+        importPage
     };
 })();

@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "Import Data";
+}
+
+<div class="hmqs-import-wrapper container my-5" x-data="window.hmqsPages.importPage()" x-init="init()">
+    <div class="row g-4">
+        <!-- History Import -->
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm border-0 hmqs-panel">
+                <div class="card-body p-4 text-center">
+                    <i class="fa-brands fa-spotify fa-3x text-success mb-3"></i>
+                    <h4>Import Listening History</h4>
+                    <p class="text-body-secondary small">Upload your Spotify StreamingHistory JSON files to add them to your local scrobble database.</p>
+                    
+                    <input type="file" x-ref="historyInput" class="d-none" accept=".json" x-on:change="uploadHistory($event)" multiple>
+                    <button class="btn btn-outline-success mt-2" x-on:click="$refs.historyInput.click()" :disabled="uploadingHistory">
+                        <span x-show="!uploadingHistory"><i class="fa-solid fa-clock-rotate-left me-2"></i> Select JSON File(s)</span>
+                        <span x-show="uploadingHistory"><i class="fa-solid fa-spinner fa-spin me-2"></i> Uploading...</span>
+                    </button>
+                    
+                    <div class="mt-3 text-success fw-semibold" x-show="historySuccess" x-text="historySuccess"></div>
+                    <div class="mt-3 text-danger fw-semibold" x-show="historyError" x-text="historyError"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Playlist Import -->
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm border-0 hmqs-panel">
+                <div class="card-body p-4 text-center">
+                    <i class="fa-solid fa-list-music fa-3x text-primary mb-3"></i>
+                    <h4>Import Playlists</h4>
+                    <p class="text-body-secondary small">Upload your Spotify Playlist.json. We will match the tracks against your local library and generate .plist files automatically.</p>
+                    
+                    <input type="file" class="d-none" accept=".json" x-ref="playlistInput" x-on:change="processPlaylists($event)">
+                    <button class="btn btn-outline-primary mt-2" x-on:click="$refs.playlistInput.click()" :disabled="processingPlaylists">
+                        <span x-show="!processingPlaylists"><i class="fa-solid fa-folder-open me-2"></i> Select Playlist JSON</span>
+                        <span x-show="processingPlaylists"><i class="fa-solid fa-spinner fa-spin me-2"></i> Processing...</span>
+                    </button>
+                    
+                    <div class="mt-3" x-show="playlistResult">
+                        <div class="alert alert-info py-2 px-3 small text-start mb-0" style="max-height: 200px; overflow-y: auto;" x-html="playlistResult"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

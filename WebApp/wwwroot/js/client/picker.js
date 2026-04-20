@@ -94,56 +94,79 @@
             const musicExtensions = ['.mp3', '.wav', '.flac', '.m4a', '.ogg', '.aac', '.wma'];
             const files = [];
 
-            for await (const entry of activeFolder.handle.values()) {
-                if (entry.kind !== 'file') {
-                    continue;
-                }
-
-                const ext = entry.name.substring(entry.name.lastIndexOf('.')).toLowerCase();
-                if (!musicExtensions.includes(ext)) {
-                    continue;
-                }
-
-                const metadataFileName = `${entry.name}.hmqsmeta`;
-                let hasMetadata = false;
-                let canScrobble = false;
-                let trackTitle = '';
-                let artist = '';
-                let album = '';
-                let imageUrl = '';
-
+            async function scanDirectory(dirHandle, pathPrefix = '') {
+                const entries = [];
                 try {
-                    const metadataEntry = await activeFolder.handle.getFileHandle(metadataFileName);
-                    if (metadataEntry) {
-                        hasMetadata = true;
-                        const metadataFile = await metadataEntry.getFile();
-                        const text = await metadataFile.text();
-                        const metadata = JSON.parse(text);
-                        canScrobble = Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0;
-                        trackTitle = typeof metadata.trackTitle === 'string' ? metadata.trackTitle.trim() : '';
-                        artist = typeof metadata.artist === 'string' ? metadata.artist.trim() : '';
-                        album = typeof metadata.album === 'string' ? metadata.album.trim() : '';
-                        imageUrl = typeof metadata.imageUrl === 'string' ? metadata.imageUrl.trim() : '';
+                    for await (const entry of dirHandle.values()) {
+                        entries.push(entry);
                     }
                 } catch {
-                    hasMetadata = false;
-                    canScrobble = false;
-                    trackTitle = '';
-                    artist = '';
-                    album = '';
-                    imageUrl = '';
+                    return; // Ignore folders that can't be read
                 }
 
-                files.push({
-                    name: entry.name,
-                    hasMetadata,
-                    canScrobble,
-                    trackTitle,
-                    artist,
-                    album,
-                    imageUrl
-                });
+                const dirs = entries.filter(e => e.kind === 'directory');
+                const fileEntries = entries.filter(e => e.kind === 'file');
+                const fileNames = new Set(fileEntries.map(e => e.name));
+
+                for (const entry of fileEntries) {
+                    const extIndex = entry.name.lastIndexOf('.');
+                    if (extIndex < 0) continue;
+                    
+                    const ext = entry.name.substring(extIndex).toLowerCase();
+                    if (!musicExtensions.includes(ext)) {
+                        continue;
+                    }
+
+                    const metadataFileName = `${entry.name}.hmqsmeta`;
+                    let hasMetadata = false;
+                    let canScrobble = false;
+                    let trackTitle = '';
+                    let artist = '';
+                    let album = '';
+                    let imageUrl = '';
+
+                    if (fileNames.has(metadataFileName)) {
+                        try {
+                            const metadataEntry = await dirHandle.getFileHandle(metadataFileName);
+                            if (metadataEntry) {
+                                hasMetadata = true;
+                                const metadataFile = await metadataEntry.getFile();
+                                const text = await metadataFile.text();
+                                const metadata = JSON.parse(text);
+                                canScrobble = Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0;
+                                trackTitle = typeof metadata.trackTitle === 'string' ? metadata.trackTitle.trim() : '';
+                                artist = typeof metadata.artist === 'string' ? metadata.artist.trim() : '';
+                                album = typeof metadata.album === 'string' ? metadata.album.trim() : '';
+                                imageUrl = typeof metadata.imageUrl === 'string' ? metadata.imageUrl.trim() : '';
+                            }
+                        } catch {
+                            hasMetadata = false;
+                            canScrobble = false;
+                            trackTitle = '';
+                            artist = '';
+                            album = '';
+                            imageUrl = '';
+                        }
+                    }
+
+                    files.push({
+                        name: `${pathPrefix}${entry.name}`,
+                        hasMetadata,
+                        canScrobble,
+                        trackTitle,
+                        artist,
+                        album,
+                        imageUrl
+                    });
+                }
+
+                // Process subdirectories sequentially
+                for (const dir of dirs) {
+                    await scanDirectory(dir, `${pathPrefix}${dir.name}/`);
+                }
             }
+
+            await scanDirectory(activeFolder.handle);
 
             files.sort((a, b) => {
                 const left = (a.trackTitle || a.name || '').toLowerCase();

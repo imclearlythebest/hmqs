@@ -178,6 +178,16 @@
             await submitScrobble(state.currentTrackFileName, progress, elapsed);
         }
 
+        async function resolveFileHandle(dirHandle, path) {
+            const parts = path.split('/');
+            const fileName = parts.pop();
+            let curr = dirHandle;
+            for (const p of parts) {
+                if (p) curr = await curr.getDirectoryHandle(p);
+            }
+            return await curr.getFileHandle(fileName);
+        }
+
         async function playMusicFile(fileName, indexHint = null) {
             const activeFolder = getActiveFolder();
             if (!activeFolder || !activeFolder.handle) {
@@ -185,7 +195,7 @@
             }
 
             try {
-                const fileHandle = await activeFolder.handle.getFileHandle(fileName);
+                const fileHandle = await resolveFileHandle(activeFolder.handle, fileName);
                 const file = await fileHandle.getFile();
                 const fileUrl = URL.createObjectURL(file);
 

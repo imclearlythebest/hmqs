@@ -11,6 +11,8 @@ namespace WebApp.Data
         public DbSet<Collection> Albums => Set<Collection>();
         public DbSet<Genre> Genres => Set<Genre>();
         public DbSet<Scrobble> Scrobbles => Set<Scrobble>();
+        public DbSet<SharedPlaylist> SharedPlaylists => Set<SharedPlaylist>();
+        public DbSet<SharedPlaylistTrack> SharedPlaylistTracks => Set<SharedPlaylistTrack>();
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
         }

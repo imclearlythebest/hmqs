@@ -1,0 +1,205 @@
+@model WebApp.Models.ViewModels.TrackShareViewModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+@section Styles {
+    <style>
+        .hmqs-share-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #1f1c2c 0%, #928DAB 100%);
+            color: #ffffff;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .share-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        @@keyframes slideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .track-cover {
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 1.5rem;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .track-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .track-cover:hover img {
+            transform: scale(1.05);
+        }
+
+        .track-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            line-height: 1.2;
+        }
+
+        .track-artist {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+        }
+
+        .platform-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .btn-platform {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            color: #fff;
+        }
+
+        .btn-spotify {
+            background-color: #1DB954;
+            color: white;
+        }
+        .btn-spotify:hover {
+            background-color: #1ed760;
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: 0 8px 20px rgba(29, 185, 84, 0.4);
+        }
+
+        .btn-applemusic {
+            background-color: #fa243c;
+            color: white;
+        }
+        .btn-applemusic:hover {
+            background-color: #ff334b;
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: 0 8px 20px rgba(250, 36, 60, 0.4);
+        }
+
+        .btn-youtube {
+            background-color: #FF0000;
+            color: white;
+        }
+        .btn-youtube:hover {
+            background-color: #ff1a1a;
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: 0 8px 20px rgba(255, 0, 0, 0.4);
+        }
+        
+        .btn-fallback {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+        .btn-fallback:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .no-links {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.95rem;
+            padding: 1rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+    </style>
+}
+
+<div class="hmqs-share-page">
+    <div class="share-card">
+        <div class="track-cover">
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <img src="@Model.ImageUrl" alt="Cover for @Model.Title" />
+            }
+            else
+            {
+                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.3);">
+                    <i class="fa-solid fa-music fa-4x" style="color:rgba(255,255,255,0.5)"></i>
+                </div>
+            }
+        </div>
+
+        <h1 class="track-title">@Model.Title</h1>
+        <p class="track-artist">@Model.Artist @(!string.IsNullOrEmpty(Model.Album) ? $" • {Model.Album}" : "")</p>
+
+        <div class="platform-links">
+            @if (Model.PlatformUrls.Any())
+            {
+                @if (Model.PlatformUrls.TryGetValue("spotify", out var spotifyUrl))
+                {
+                    <a href="@spotifyUrl" target="_blank" class="btn-platform btn-spotify">
+                        <i class="fa-brands fa-spotify fa-lg"></i> Listen on Spotify
+                    </a>
+                }
+                @if (Model.PlatformUrls.TryGetValue("appleMusic", out var appleUrl))
+                {
+                    <a href="@appleUrl" target="_blank" class="btn-platform btn-applemusic">
+                        <i class="fa-brands fa-apple fa-lg"></i> Listen on Apple Music
+                    </a>
+                }
+                @if (Model.PlatformUrls.TryGetValue("youtube", out var ytUrl))
+                {
+                    <a href="@ytUrl" target="_blank" class="btn-platform btn-youtube">
+                        <i class="fa-brands fa-youtube fa-lg"></i> Listen on YouTube
+                    </a>
+                }
+                
+                @foreach(var kvp in Model.PlatformUrls.Where(k => k.Key != "spotify" && k.Key != "appleMusic" && k.Key != "youtube").Take(2))
+                {
+                    <a href="@kvp.Value" target="_blank" class="btn-platform btn-fallback">
+                        <i class="fa-solid fa-play"></i> Listen on @kvp.Key
+                    </a>
+                }
+            }
+            else
+            {
+                <div class="no-links">
+                    <i class="fa-solid fa-satellite-dish mb-2 fa-2x"></i><br/>
+                    We couldn't find matching streaming links for this local track.
+                </div>
+            }
+        </div>
+    </div>
+</div>

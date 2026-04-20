@@ -18,6 +18,7 @@ builder.Services.AddIdentity<Listener, IdentityRole<Guid>>()
 
 builder.Services.AddScoped<ScrobbleService>();
 builder.Services.AddScoped<PlaylistService>();
+builder.Services.AddScoped<LocalTrackService>();
 builder.Services.AddControllers();
 
 var app = builder.Build();

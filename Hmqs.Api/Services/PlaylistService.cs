@@ -212,7 +212,16 @@ public class PlaylistService
                 Description = p.Description,
                 CreatedAt = p.CreatedAt,
                 UpdatedAt = p.UpdatedAt,
-                Tracks = Array.Empty<PlaylistTrackResponseDto>()
+                Tracks = p.PlaylistTracks
+                    .OrderBy(pt => pt.Position)
+                    .Select(pt => new PlaylistTrackResponseDto
+                    {
+                        Id = pt.Id,
+                        LocalTrackId = pt.LocalTrackId,
+                        Position = pt.Position,
+                        AddedAt = pt.AddedAt
+                    })
+                    .ToList()
             })
             .ToListAsync(cancellationToken);
     }

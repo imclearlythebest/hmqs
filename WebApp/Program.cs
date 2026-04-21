@@ -10,6 +10,8 @@ builder.Services
     .AddControllersWithViews()
     .AddRazorRuntimeCompilation();
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<WebApp.Services.OdesliService>();
+builder.Services.AddScoped<WebApp.Services.ItunesService>();
 
 builder.Services.AddDbContext<WebAppDbContext>(options =>
     options.UseMySql(

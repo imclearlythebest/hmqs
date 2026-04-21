@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     window.hmqsModules = window.hmqsModules || {};
 
     function createPickerModule(state, dbApi, notifyFolderChanged) {
@@ -111,6 +111,7 @@
                 let artist = '';
                 let album = '';
                 let imageUrl = '';
+                let itunesTrackId = 0;
 
                 try {
                     const metadataEntry = await activeFolder.handle.getFileHandle(metadataFileName);
@@ -120,6 +121,7 @@
                         const text = await metadataFile.text();
                         const metadata = JSON.parse(text);
                         canScrobble = Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0;
+                        itunesTrackId = canScrobble ? metadata.itunesTrackId : 0;
                         trackTitle = typeof metadata.trackTitle === 'string' ? metadata.trackTitle.trim() : '';
                         artist = typeof metadata.artist === 'string' ? metadata.artist.trim() : '';
                         album = typeof metadata.album === 'string' ? metadata.album.trim() : '';
@@ -138,6 +140,7 @@
                     name: entry.name,
                     hasMetadata,
                     canScrobble,
+                    itunesTrackId,
                     trackTitle,
                     artist,
                     album,

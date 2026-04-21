@@ -1,4 +1,4 @@
-@{
+﻿@{
   ViewData["Title"] = "Home";
 }
 
@@ -81,6 +81,9 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="hmqs-row-actions" x-on:click.stop>
+                                        <a x-show="file.canScrobble" :href="`/Share/ByItunesId/${file.itunesTrackId}`" target="_blank" class="btn btn-sm btn-link hmqs-icon-btn" title="Share track" x-on:click.stop>
+                                            <i class="fa-solid fa-share-nodes"></i>
+                                        </a>
                                         <button x-on:click="openMetadataEditor(file)" class="btn btn-sm btn-link hmqs-icon-btn" :title="file.hasMetadata ? 'Edit metadata' : 'Add metadata'">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>

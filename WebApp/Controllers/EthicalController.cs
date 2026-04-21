@@ -46,16 +46,68 @@ public class EthicalController(WebAppDbContext context, ItunesService itunesServ
             return RedirectToAction(nameof(Index), new { budget });
         }
 
-        var stat = await _context.Set<UserArtistStat>()
+        // Get listening history to determine who has more time than the purchased artist
+        var userArtistSeconds = await _context.Scrobbles
+            .AsNoTracking()
+            .Where(s => s.UserId == userId)
+            .Join(
+                _context.Tracks.AsNoTracking(),
+                scrobble => scrobble.TrackId,
+                track => track.Id,
+                (scrobble, track) => new { track.ArtistId, scrobble.DurationSeconds })
+            .Where(x => x.ArtistId.HasValue)
+            .GroupBy(x => x.ArtistId!.Value)
+            .Select(g => new { ArtistId = g.Key, Seconds = g.Sum(x => x.DurationSeconds) })
+            .ToListAsync(cancellationToken);
+
+        var byArtist = userArtistSeconds.ToDictionary(x => x.ArtistId, x => x.Seconds);
+        var purchasedSeconds = byArtist.GetValueOrDefault(artistId, 0);
+        
+        var affectedArtistIds = byArtist
+            .Where(pair => pair.Key != artistId && pair.Value > purchasedSeconds)
+            .Select(pair => pair.Key)
+            .ToList();
+
+        // 1. Reset the purchased artist
+        var purchasedStat = await _context.UserArtistStats
             .FirstOrDefaultAsync(s => s.UserId == userId && s.ArtistId == artistId, cancellationToken);
 
-        if (stat != null && stat.IgnoredCount > 0)
+        if (purchasedStat != null)
         {
-            stat.IgnoredCount = 0;
-            await _context.SaveChangesAsync(cancellationToken);
+            purchasedStat.IgnoredCount = 0;
         }
 
-        TempData["EthicalMessage"] = "Purchase logged! Your support for this artist has been updated.";
+        // 2. Increment "neglected" artists (those with more listening time)
+        if (affectedArtistIds.Count > 0)
+        {
+            var existingStats = await _context.UserArtistStats
+                .Where(s => s.UserId == userId && affectedArtistIds.Contains(s.ArtistId))
+                .ToListAsync(cancellationToken);
+
+            var existingByArtist = existingStats.ToDictionary(s => s.ArtistId, s => s);
+            foreach (var affectedId in affectedArtistIds)
+            {
+                if (!existingByArtist.TryGetValue(affectedId, out var stat))
+                {
+                    stat = new UserArtistStat
+                    {
+                        UserId = userId,
+                        ArtistId = affectedId,
+                        IgnoredCount = 0,
+                    };
+                    _context.UserArtistStats.Add(stat);
+                }
+
+                stat.IgnoredCount += 1;
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        TempData["EthicalMessage"] = affectedArtistIds.Count > 0 
+            ? $"Purchase logged! Resetted this artist and updated priority for {affectedArtistIds.Count} more-listened-to neglected artist(s)."
+            : "Purchase logged! Your support for this artist has been updated.";
+
         return RedirectToAction(nameof(Index), new { budget });
     }
 

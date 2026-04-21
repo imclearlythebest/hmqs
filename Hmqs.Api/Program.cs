@@ -20,6 +20,7 @@ builder.Services.AddScoped<ScrobbleService>();
 builder.Services.AddScoped<PlaylistService>();
 builder.Services.AddScoped<LocalTrackService>();
 builder.Services.AddScoped<EthicalCalculatorService>();
+builder.Services.AddHttpClient<RecommendationService>();
 builder.Services.AddHttpClient<GlobalTrackService>(client =>
 {
     client.BaseAddress = new Uri("https://itunes.apple.com/");

@@ -16,6 +16,9 @@ public class AppDbContext : IdentityDbContext<Listener, IdentityRole<Guid>, Guid
     public DbSet<Scrobble> Scrobbles { get; set; }
     public DbSet<Playlist> Playlists { get; set; }
     public DbSet<PlaylistTrack> PlaylistTracks { get; set; }
+    public DbSet<Artist> Artists { get; set; }
+    public DbSet<Album> Albums { get; set; }
+
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,6 +65,24 @@ public class AppDbContext : IdentityDbContext<Listener, IdentityRole<Guid>, Guid
             .WithMany(lt => lt.PlaylistTracks)
             .HasForeignKey(pt => pt.LocalTrackId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<GlobalTrack>()
+            .HasOne(g => g.Artist)
+            .WithMany(a => a.GlobalTracks)
+            .HasForeignKey(g => g.ArtistId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<GlobalTrack>()
+            .HasOne(g => g.Album)
+            .WithMany(a => a.GlobalTracks)
+            .HasForeignKey(g => g.AlbumId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Album>()
+            .HasOne(a => a.Artist)
+            .WithMany(ar => ar.Albums)
+            .HasForeignKey(a => a.ArtistId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         SeedData(modelBuilder);
     }

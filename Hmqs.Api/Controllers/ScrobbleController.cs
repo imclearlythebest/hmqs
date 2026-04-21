@@ -1,32 +1,18 @@
 using Hmqs.Api.Dtos;
 using Hmqs.Api.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Hmqs.Api.Controllers;
 
 [ApiController]
 [Route("api/scrobbles")]
-[Authorize]
-public class ScrobbleController : ControllerBase
+public class ScrobbleController : AuthorizedApiController
 {
     private readonly ScrobbleService _scrobbleService;
 
     public ScrobbleController(ScrobbleService scrobbleService)
     {
         _scrobbleService = scrobbleService;
-    }
-
-    private Guid GetCurrentListenerId()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new InvalidOperationException("Authenticated user id is missing.");
-        }
-
-        return Guid.Parse(userId);
     }
 
     [HttpPost("submit")]

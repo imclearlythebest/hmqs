@@ -19,6 +19,11 @@ builder.Services.AddIdentity<Listener, IdentityRole<Guid>>()
 builder.Services.AddScoped<ScrobbleService>();
 builder.Services.AddScoped<PlaylistService>();
 builder.Services.AddScoped<LocalTrackService>();
+builder.Services.AddHttpClient<GlobalTrackService>(client =>
+{
+    client.BaseAddress = new Uri("https://itunes.apple.com/");
+    client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+});
 builder.Services.AddControllers();
 
 var app = builder.Build();

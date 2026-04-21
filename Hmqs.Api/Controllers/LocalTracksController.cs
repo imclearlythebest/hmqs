@@ -1,32 +1,20 @@
 using Hmqs.Api.Dtos;
 using Hmqs.Api.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Hmqs.Api.Controllers;
 
 [ApiController]
 [Route("api/local-tracks")]
-[Authorize]
-public class LocalTracksController : ControllerBase
+public class LocalTracksController : AuthorizedApiController
 {
     private readonly LocalTrackService _localTrackService;
+    private readonly GlobalTrackService _globalTrackService;
 
-    public LocalTracksController(LocalTrackService localTrackService)
+    public LocalTracksController(LocalTrackService localTrackService, GlobalTrackService globalTrackService)
     {
         _localTrackService = localTrackService;
-    }
-
-    private Guid GetCurrentListenerId()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new InvalidOperationException("Authenticated user id is missing.");
-        }
-
-        return Guid.Parse(userId);
+        _globalTrackService = globalTrackService;
     }
 
     [HttpPost]
@@ -52,6 +40,20 @@ public class LocalTracksController : ControllerBase
             return NotFound();
         }
 
+        return Ok(response);
+    }
+
+    [HttpGet("{trackId:guid}/catalogue")]
+    public async Task<ActionResult<IEnumerable<GlobalTrackMatchDto>>> SearchCatalogue(Guid trackId, [FromQuery] int limit = 5)
+    {
+        var response = await _globalTrackService.SearchMatchesAsync(GetCurrentListenerId(), trackId, limit);
+        return Ok(response);
+    }
+
+    [HttpPost("{trackId:guid}/catalogue/select")]
+    public async Task<ActionResult<LocalTrackResponseDto>> SelectCatalogue(Guid trackId, GlobalTrackMatchSelectionDto model)
+    {
+        var response = await _globalTrackService.SelectMatchAsync(GetCurrentListenerId(), trackId, model);
         return Ok(response);
     }
 

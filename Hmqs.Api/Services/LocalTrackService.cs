@@ -114,7 +114,8 @@ public class LocalTrackService
                 Album = t.Album,
                 Genre = t.Genre,
                 Year = t.Year,
-                ArtworkUrl = t.ArtworkUrl
+                ArtworkUrl = t.ArtworkUrl,
+                GlobalTrackId = t.GlobalTrackId
             })
             .ToListAsync(cancellationToken);
     }
@@ -132,10 +133,12 @@ public class LocalTrackService
                 Album = t.Album,
                 Genre = t.Genre,
                 Year = t.Year,
-                ArtworkUrl = t.ArtworkUrl
+                ArtworkUrl = t.ArtworkUrl,
+                GlobalTrackId = t.GlobalTrackId
             })
             .SingleOrDefaultAsync(cancellationToken);
     }
+
 
     private static LocalTrackResponseDto Map(LocalTrack track)
     {
@@ -148,7 +151,8 @@ public class LocalTrackService
             Album = track.Album,
             Genre = track.Genre,
             Year = track.Year,
-            ArtworkUrl = track.ArtworkUrl
+            ArtworkUrl = track.ArtworkUrl,
+            GlobalTrackId = track.GlobalTrackId
         };
     }
 }

@@ -1,32 +1,18 @@
 using Hmqs.Api.Dtos;
 using Hmqs.Api.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Hmqs.Api.Controllers;
 
 [ApiController]
 [Route("api/playlists")]
-[Authorize]
-public class PlaylistController : ControllerBase
+public class PlaylistController : AuthorizedApiController
 {
     private readonly PlaylistService _playlistService;
 
     public PlaylistController(PlaylistService playlistService)
     {
         _playlistService = playlistService;
-    }
-
-    private Guid GetCurrentListenerId()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            throw new InvalidOperationException("Authenticated user id is missing.");
-        }
-
-        return Guid.Parse(userId);
     }
 
     [HttpPost]

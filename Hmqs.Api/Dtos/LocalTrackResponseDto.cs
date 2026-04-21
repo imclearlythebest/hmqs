@@ -10,4 +10,5 @@ public class LocalTrackResponseDto
     public string? Genre { get; set; }
     public int? Year { get; set; }
     public string? ArtworkUrl { get; set; }
+    public Guid? GlobalTrackId { get; set; }
 }

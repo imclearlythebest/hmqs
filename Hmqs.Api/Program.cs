@@ -19,6 +19,7 @@ builder.Services.AddIdentity<Listener, IdentityRole<Guid>>()
 builder.Services.AddScoped<ScrobbleService>();
 builder.Services.AddScoped<PlaylistService>();
 builder.Services.AddScoped<LocalTrackService>();
+builder.Services.AddScoped<EthicalCalculatorService>();
 builder.Services.AddHttpClient<GlobalTrackService>(client =>
 {
     client.BaseAddress = new Uri("https://itunes.apple.com/");

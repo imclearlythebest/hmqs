@@ -255,6 +255,7 @@ public class RecommendationsController(IHttpClientFactory httpClientFactory, Web
 
         return new RecommendationDto
         {
+            ItunesTrackId = track.ItunesTrackId,
             Title = title,
             Artist = artist,
             ArtworkUrl = track.ArtworkUrl ?? string.Empty,
@@ -299,9 +300,10 @@ public class RecommendationsController(IHttpClientFactory httpClientFactory, Web
             return [];
         }
 
-        return results
+        var dtos = results
             .Select(item => new RecommendationDto
             {
+                ItunesTrackId = int.TryParse(item.Id, out var itunesTrackId) ? itunesTrackId : 0,
                 Title = item.Name?.Trim() ?? string.Empty,
                 Artist = item.ArtistName?.Trim() ?? string.Empty,
                 ArtworkUrl = item.ArtworkUrl100?.Trim() ?? string.Empty,
@@ -309,6 +311,8 @@ public class RecommendationsController(IHttpClientFactory httpClientFactory, Web
                 PreviewUrl = item.PreviewUrl?.Trim() ?? string.Empty,
             })
             .ToList();
+
+        return dtos;
     }
 
     private sealed class ItunesFeedResponse
@@ -323,6 +327,7 @@ public class RecommendationsController(IHttpClientFactory httpClientFactory, Web
 
     private sealed class ItunesFeedItem
     {
+        public string? Id { get; init; }
         public string? Name { get; init; }
         public string? ArtistName { get; init; }
         public string? ArtworkUrl100 { get; init; }

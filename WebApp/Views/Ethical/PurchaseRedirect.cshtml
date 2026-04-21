@@ -1,0 +1,33 @@
+@model WebApp.Models.Dtos.EthicalPurchaseRedirectViewDto
+@{
+    ViewData["Title"] = "Redirecting to Amazon";
+}
+
+<div class="hmqs-panel p-4 text-center">
+    <div class="mx-auto" style="max-width: 560px;">
+        <div class="spinner-border text-warning mb-3" role="status"></div>
+        <h4 class="mb-2">Redirecting to Amazon</h4>
+        <p class="text-body-secondary mb-1">@Model.ArtistName</p>
+        <p class="fw-semibold mb-1">@Model.AlbumName</p>
+        @if (Model.AlbumPrice.HasValue)
+        {
+            <p class="text-body-secondary mb-3">Album price: $@Model.AlbumPrice.Value.ToString("0.00")</p>
+        }
+        <p class="text-body-secondary">Budget: $@Model.Budget.ToString("0.00")</p>
+
+        <a id="amazon-link" href="@Model.AmazonStoreUrl" class="btn btn-warning mt-3" rel="noopener noreferrer">
+            Continue to Amazon
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const amazonLink = document.getElementById('amazon-link');
+        if (amazonLink && amazonLink.href) {
+            setTimeout(() => {
+                window.location.href = amazonLink.href;
+            }, 1200);
+        }
+    </script>
+}

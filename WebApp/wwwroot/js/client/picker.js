@@ -107,6 +107,9 @@
                 const metadataFileName = `${entry.name}.hmqsmeta`;
                 let hasMetadata = false;
                 let canScrobble = false;
+                let itunesTrackId = null;
+                let itunesArtistId = null;
+                let itunesCollectionId = null;
                 let trackTitle = '';
                 let artist = '';
                 let album = '';
@@ -120,6 +123,9 @@
                         const text = await metadataFile.text();
                         const metadata = JSON.parse(text);
                         canScrobble = Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0;
+                        itunesTrackId = Number.isFinite(metadata.itunesTrackId) ? metadata.itunesTrackId : null;
+                        itunesArtistId = Number.isFinite(metadata.itunesArtistId) ? metadata.itunesArtistId : null;
+                        itunesCollectionId = Number.isFinite(metadata.itunesCollectionId) ? metadata.itunesCollectionId : null;
                         trackTitle = typeof metadata.trackTitle === 'string' ? metadata.trackTitle.trim() : '';
                         artist = typeof metadata.artist === 'string' ? metadata.artist.trim() : '';
                         album = typeof metadata.album === 'string' ? metadata.album.trim() : '';
@@ -128,6 +134,9 @@
                 } catch {
                     hasMetadata = false;
                     canScrobble = false;
+                    itunesTrackId = null;
+                    itunesArtistId = null;
+                    itunesCollectionId = null;
                     trackTitle = '';
                     artist = '';
                     album = '';
@@ -138,6 +147,9 @@
                     name: entry.name,
                     hasMetadata,
                     canScrobble,
+                    itunesTrackId,
+                    itunesArtistId,
+                    itunesCollectionId,
                     trackTitle,
                     artist,
                     album,

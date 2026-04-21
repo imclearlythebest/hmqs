@@ -18,8 +18,9 @@ else
   {
     var title = string.IsNullOrWhiteSpace(item.Title) ? "Unknown title" : item.Title;
     var artist = string.IsNullOrWhiteSpace(item.Artist) ? "Unknown artist" : item.Artist;
+    var statusLabel = "Download";
 
-    <article class="hmqs-recommendation-card">
+    <article class="hmqs-recommendation-card" data-recommendation-card data-itunes-track-id="@item.ItunesTrackId">
       <div class="hmqs-recommendation-cover">
         @if (!string.IsNullOrWhiteSpace(item.ArtworkUrl))
         {
@@ -35,12 +36,21 @@ else
       <div class="hmqs-recommendation-body">
         <h6 class="m-0 text-truncate" title="@title">@title</h6>
         <p class="text-body-secondary m-0 text-truncate" title="@artist">@artist</p>
-        @if (!string.IsNullOrWhiteSpace(item.AppleMusicUrl))
-        {
-          <a class="btn btn-sm btn-outline-primary mt-2" href="@item.AppleMusicUrl" target="_blank" rel="noopener noreferrer">
-            Open in Apple Music
-          </a>
-        }
+        <button type="button"
+                class="btn btn-sm mt-2 hmqs-rec-download-btn btn-primary"
+                onclick="window.hmqsRecommendationDownload(this)"
+                data-track-title="@title"
+                data-artist-name="@artist"
+                data-itunes-track-id="@item.ItunesTrackId"
+                data-image-url="@item.ArtworkUrl"
+                data-apple-music-url="@item.AppleMusicUrl"
+                data-status-label="@statusLabel">
+          <i class="fa-solid fa-download me-1"></i>
+          <span class="hmqs-rec-download-label">@statusLabel</span>
+        </button>
+        <span class="badge bg-success-subtle text-success-emphasis mt-2 hmqs-rec-inlib-badge d-none">
+          <i class="fa-solid fa-check me-1"></i>In library
+        </span>
       </div>
     </article>
   }

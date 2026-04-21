@@ -12,6 +12,7 @@ builder.Services
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<WebApp.Services.OdesliService>();
 builder.Services.AddScoped<WebApp.Services.ItunesService>();
+builder.Services.AddScoped<WebApp.Services.DiscordService>();
 
 builder.Services.AddDbContext<WebAppDbContext>(options =>
     options.UseMySql(

@@ -1,0 +1,241 @@
+@model IEnumerable<WebApp.Models.Blend>
+@{
+    ViewData["Title"] = "Blends";
+}
+
+<div class="container mt-4" x-data="blendsPage()">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <h2 class="mb-4">Your Blends</h2>
+
+            @if (TempData["BlendError"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["BlendError"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="list-group shadow-sm mb-4">
+                @if (!Model.Any())
+                {
+                    <div class="list-group-item text-muted text-center py-4">
+                        No blends yet. Create one to get started!
+                    </div>
+                }
+                @foreach (var blend in Model)
+                {
+                    <button type="button" 
+                            class="list-group-item list-group-item-action border-start border-4"
+                            :class="selectedBlendId === @blend.Id ? 'active border-primary' : 'border-light'"
+                            @@click="selectBlend(@blend.Id, '@blend.Name')">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>@blend.Name</strong>
+                            <i class="fas fa-chevron-right small opacity-50"></i>
+                        </div>
+                    </button>
+                }
+            </div>
+
+            <div class="card shadow-sm border-0 sticky-top hmqs-blend-sidebar" style="top: 1rem;">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Create New Blend</h5>
+                    <form asp-action="Create" method="post">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase">Blend Name</label>
+                            <input type="text" name="name" class="form-control" placeholder="e.g., Weekend Mix" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase">Invite Friends</label>
+                            <input type="text" name="friendUsernames" class="form-control" placeholder="Enter usernames (comma separated)..." />
+                            <div class="form-text small">Invite friends to mix your listening histories.</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                            <i class="fas fa-plus-circle me-2"></i>Create Blend
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <template x-if="selectedBlendId">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white py-3 border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h3 class="m-0" x-text="selectedBlendName"></h3>
+                            <div class="d-flex gap-2 align-items-center">
+                                <button class="btn btn-sm btn-success rounded-pill px-3" @@click="playAll()" x-show="tracks.some(t => t.inLibrary)">
+                                    <i class="fas fa-play me-2"></i>Play Blend
+                                </button>
+                                <span class="badge bg-info text-dark" x-show="tracks.length" x-text="tracks.length + ' tracks'"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 70px;" class="ps-3">#</th>
+                                        <th>Track Info</th>
+                                        <th class="text-end pe-3">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(track, index) in tracks" :key="track.itunesTrackId">
+                                        <tr class="track-row" :class="track.inLibrary ? 'cursor-pointer' : ''" @@click="track.inLibrary ? playTrack(track) : null">
+                                            <td class="ps-3">
+                                                <div class="position-relative">
+                                                    <img :src="track.artworkUrl" class="rounded shadow-sm" style="width: 48px; height: 48px;" />
+                                                    <div class="position-absolute bottom-0 end-0 bg-dark text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 18px; height: 18px; font-size: 10px;" x-text="index + 1"></div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="fw-bold" x-text="track.trackTitle"></div>
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small" x-show="track.inLibrary" style="font-size: 0.65rem;">IN LIBRARY</span>
+                                                </div>
+                                                <div class="text-muted small" x-text="track.artistName"></div>
+                                            </td>
+                                            <td class="text-end pe-3" @@click.stop>
+                                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                                                        x-show="!track.inLibrary"
+                                                        @@click="downloadTrack(track)"
+                                                        :disabled="downloadingId === track.itunesTrackId">
+                                                    <span x-show="downloadingId !== track.itunesTrackId">
+                                                        <i class="fas fa-download me-1"></i>Download
+                                                    </span>
+                                                    <span x-show="downloadingId === track.itunesTrackId">
+                                                        <span class="spinner-border spinner-border-sm me-1"></span>
+                                                    </span>
+                                                </button>
+                                                <button class="btn btn-sm btn-primary rounded-circle" x-show="track.inLibrary" @@click="playTrack(track)" title="Play">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                        <template x-if="loading">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Mixing tracks for your blend...</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <template x-if="!selectedBlendId">
+                <div class="text-center py-5 h-100 d-flex flex-column justify-content-center align-items-center bg-light rounded-3 border">
+                    <i class="fas fa-compact-disc display-1 text-muted opacity-25"></i>
+                    <h4 class="mt-4 text-muted">Select a blend to listen</h4>
+                    <p class="text-muted small">Collaborative playlists generated from your shared taste.</p>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function blendsPage() {
+            return {
+                selectedBlendId: null,
+                selectedBlendName: '',
+                tracks: [],
+                loading: false,
+                downloadingId: null,
+
+                init() {
+                    window.addEventListener('folder-changed', async () => {
+                        if (this.selectedBlendId) {
+                            await this.refreshLibraryStatus();
+                        }
+                    });
+                },
+
+                async selectBlend(id, name) {
+                    this.selectedBlendId = id;
+                    this.selectedBlendName = name;
+                    this.loading = true;
+                    this.tracks = [];
+                    try {
+                        const res = await fetch(`/Blends/Generate?blendId=${id}`);
+                        const items = await res.json();
+                        this.tracks = items.map(t => ({ ...t, inLibrary: false, localFileName: null }));
+                        await this.refreshLibraryStatus();
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async refreshLibraryStatus() {
+                    if (!window.hmqsClient || !window.hmqsClient.getCurrentFolderFiles) return;
+                    try {
+                        const files = await window.hmqsClient.getCurrentFolderFiles();
+                        const fileMap = new Map();
+                        files.forEach(f => {
+                            if (f.itunesTrackId) fileMap.set(Number(f.itunesTrackId), f.name);
+                        });
+
+                        this.tracks = this.tracks.map(t => {
+                            const localFileName = fileMap.get(Number(t.itunesTrackId));
+                            return {
+                                ...t,
+                                inLibrary: !!localFileName,
+                                localFileName: localFileName
+                            };
+                        });
+                    } catch (e) {
+                        console.error("Library check failed", e);
+                    }
+                },
+
+                async playTrack(track) {
+                    if (!track.inLibrary || !track.localFileName) return;
+                    
+                    const queue = this.tracks
+                        .filter(t => t.inLibrary && t.localFileName)
+                        .map(t => t.localFileName);
+                    
+                    if (window.hmqsClient && window.hmqsClient.setPlaybackQueue) {
+                        window.hmqsClient.setPlaybackQueue(queue);
+                        await window.hmqsClient.playMusicFile(track.localFileName);
+                    }
+                },
+
+                async playAll() {
+                    const firstInLibrary = this.tracks.find(t => t.inLibrary && t.localFileName);
+                    if (firstInLibrary) {
+                        await this.playTrack(firstInLibrary);
+                    }
+                },
+
+                async downloadTrack(track) {
+                    this.downloadingId = track.itunesTrackId;
+                    const metadata = {
+                        itunesTrackId: track.itunesTrackId,
+                        trackTitle: track.trackTitle,
+                        artistName: track.artistName,
+                        artist: track.artistName,
+                        imageUrl: track.artworkUrl
+                    };
+                    try {
+                        await window.hmqsClient.downloadAndSave(track.itunesTrackId, metadata);
+                        await this.refreshLibraryStatus();
+                    } finally {
+                        this.downloadingId = null;
+                    }
+                }
+            };
+        }
+    </script>
+    <style>
+        .track-row:hover { background-color: rgba(var(--bs-primary-rgb), 0.05); }
+        .cursor-pointer { cursor: pointer; }
+        .hmqs-blend-sidebar { z-index: 1; }
+    </style>
+}

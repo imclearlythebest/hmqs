@@ -1,0 +1,167 @@
+@model IEnumerable<WebApp.Models.WebAppUser>
+@{
+    ViewData["Title"] = "Friends";
+    var pending = ViewBag.PendingRequests as IEnumerable<WebApp.Models.Friendship>;
+}
+
+<div class="container mt-4">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="m-0">Friends</h2>
+            </div>
+            
+            @if (TempData["FriendMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["FriendMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["FriendError"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["FriendError"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (pending != null && pending.Any())
+            {
+                <div class="card mb-4 border-primary shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Pending Requests</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var req in pending)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        @req.Requester.UserName?[0].ToString().ToUpper()
+                                    </div>
+                                    <strong>@req.Requester.UserName</strong>
+                                </div>
+                                <form asp-action="AcceptRequest" method="post">
+                                    <input type="hidden" name="requestId" value="@req.Id" />
+                                    <button type="submit" class="btn btn-sm btn-success px-3">Accept</button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <h4 class="mb-3">Your Friends</h4>
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 bg-light rounded-3 border mb-4">
+                    <p class="text-muted mb-0">You haven't added any friends yet.</p>
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-sm-2 g-3 mb-5">
+                    @foreach (var friend in Model)
+                    {
+                        <div class="col">
+                            <div class="card h-100 shadow-sm border-0 border-start border-4 border-info">
+                                <div class="card-body d-flex align-items-center p-3">
+                                    <div class="rounded-circle bg-info text-white d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-size: 1.2rem;">
+                                        @friend.UserName?[0].ToString().ToUpper()
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">@friend.UserName</h6>
+                                    </div>
+                                 </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <h4 class="mb-3">Recent Friend Activity</h4>
+            <div id="friends-activity" class="mt-2">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Checking friend updates...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 sticky-top hmqs-friends-sidebar" style="top: 1rem;">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Add Friend</h5>
+                    <form asp-action="SendRequest" method="post">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase">Username</label>
+                            <input type="text" name="username" class="form-control" placeholder="Enter username..." required />
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                            <i class="fas fa-user-plus me-2"></i>Send Request
+                        </button>
+                    </form>
+                    <hr />
+                    <div class="small text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Once they accept, you'll see their listening history.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function timeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return 'Just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        async function loadActivity() {
+            const res = await fetch('/Friends/RecentScrobbles');
+            const data = await res.json();
+            const container = document.getElementById('friends-activity');
+            
+            if (data.length === 0) {
+                container.innerHTML = '<div class="alert alert-light border text-center">No recent activity from friends.</div>';
+                return;
+            }
+
+            container.innerHTML = data.map(s => `
+                <div class="card mb-3 border-0 shadow-sm overflow-hidden">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center">
+                             <div class="flex-grow-1">
+                                <span class="fw-bold text-primary">${s.username}</span> 
+                                <span class="text-muted">listened to</span> 
+                                <span class="fw-semibold text-dark">${s.trackTitle}</span>
+                                <span class="text-muted">by</span> 
+                                <span class="fw-semibold text-secondary">${s.artistName}</span>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    <i class="far fa-clock me-1"></i>${timeAgo(s.playedAt)}
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        loadActivity();
+        setInterval(loadActivity, 30000);
+    </script>
+    <style>
+        .hmqs-friends-sidebar { z-index: 1; }
+    </style>
+}

@@ -5,13 +5,16 @@ using Microsoft.EntityFrameworkCore;
 using WebApp.Data;
 using WebApp.Models;
 using WebApp.Models.Dtos;
+using WebApp.Services;
 
 namespace WebApp.Controllers;
 
 [Authorize]
-public class EthicalController(WebAppDbContext context) : Controller
+public class EthicalController(WebAppDbContext context, ItunesService itunesService, OdesliService odesliService) : Controller
 {
     private readonly WebAppDbContext _context = context;
+    private readonly ItunesService _itunesService = itunesService;
+    private readonly OdesliService _odesliService = odesliService;
 
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] decimal? budget, CancellationToken cancellationToken)
@@ -30,7 +33,7 @@ public class EthicalController(WebAppDbContext context) : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DummyPurchase(int purchasedArtistId, decimal budget = 500m, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> LogPurchase(int artistId, decimal budget = 500m, CancellationToken cancellationToken = default)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId))
@@ -38,11 +41,12 @@ public class EthicalController(WebAppDbContext context) : Controller
             return RedirectToAction("Login", "Auth");
         }
 
-        if (purchasedArtistId <= 0)
+        if (artistId <= 0)
         {
             return RedirectToAction(nameof(Index), new { budget });
         }
 
+        // Get listening history to determine who has more time than the purchased artist
         var userArtistSeconds = await _context.Scrobbles
             .AsNoTracking()
             .Where(s => s.UserId == userId)
@@ -51,61 +55,98 @@ public class EthicalController(WebAppDbContext context) : Controller
                 scrobble => scrobble.TrackId,
                 track => track.Id,
                 (scrobble, track) => new { track.ArtistId, scrobble.DurationSeconds })
-            .Where(x => x.ArtistId.HasValue && x.DurationSeconds > 0)
+            .Where(x => x.ArtistId.HasValue)
             .GroupBy(x => x.ArtistId!.Value)
             .Select(g => new { ArtistId = g.Key, Seconds = g.Sum(x => x.DurationSeconds) })
             .ToListAsync(cancellationToken);
 
         var byArtist = userArtistSeconds.ToDictionary(x => x.ArtistId, x => x.Seconds);
-        if (!byArtist.ContainsKey(purchasedArtistId))
-        {
-            TempData["EthicalMessage"] = "Dummy purchase skipped because this artist has no listening history yet.";
-            return RedirectToAction(nameof(Index), new { budget });
-        }
-
-        var purchasedSeconds = byArtist.GetValueOrDefault(purchasedArtistId, 0);
+        var purchasedSeconds = byArtist.GetValueOrDefault(artistId, 0);
+        
         var affectedArtistIds = byArtist
-            .Where(pair => pair.Key != purchasedArtistId && pair.Value > purchasedSeconds)
+            .Where(pair => pair.Key != artistId && pair.Value > purchasedSeconds)
             .Select(pair => pair.Key)
             .ToList();
 
-        var purchasedStat = await _context.Set<UserArtistStat>()
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.ArtistId == purchasedArtistId, cancellationToken);
+        // 1. Reset the purchased artist
+        var purchasedStat = await _context.UserArtistStats
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.ArtistId == artistId, cancellationToken);
 
-        if (purchasedStat != null && purchasedStat.IgnoredCount > 0)
+        if (purchasedStat != null)
         {
             purchasedStat.IgnoredCount = 0;
-            await _context.SaveChangesAsync(cancellationToken);
         }
 
+        // 2. Increment "neglected" artists (those with more listening time)
         if (affectedArtistIds.Count > 0)
         {
-            var existingStats = await _context.Set<UserArtistStat>()
+            var existingStats = await _context.UserArtistStats
                 .Where(s => s.UserId == userId && affectedArtistIds.Contains(s.ArtistId))
                 .ToListAsync(cancellationToken);
 
             var existingByArtist = existingStats.ToDictionary(s => s.ArtistId, s => s);
-            foreach (var artistId in affectedArtistIds)
+            foreach (var affectedId in affectedArtistIds)
             {
-                if (!existingByArtist.TryGetValue(artistId, out var stat))
+                if (!existingByArtist.TryGetValue(affectedId, out var stat))
                 {
                     stat = new UserArtistStat
                     {
                         UserId = userId,
-                        ArtistId = artistId,
+                        ArtistId = affectedId,
                         IgnoredCount = 0,
                     };
-                    _context.Add(stat);
+                    _context.UserArtistStats.Add(stat);
                 }
 
                 stat.IgnoredCount += 1;
             }
-
-            await _context.SaveChangesAsync(cancellationToken);
         }
 
-        TempData["EthicalMessage"] = $"Dummy purchase applied. Incremented ignored counts for {affectedArtistIds.Count} artist(s).";
+        await _context.SaveChangesAsync(cancellationToken);
+
+        TempData["EthicalMessage"] = affectedArtistIds.Count > 0 
+            ? $"Purchase logged! Resetted this artist and updated priority for {affectedArtistIds.Count} more-listened-to neglected artist(s)."
+            : "Purchase logged! Your support for this artist has been updated.";
+
         return RedirectToAction(nameof(Index), new { budget });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Purchase(int artistId, int albumId, decimal budget = 500m, CancellationToken cancellationToken = default)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return RedirectToAction("Login", "Auth");
+        }
+
+        if (artistId <= 0 || albumId <= 0)
+        {
+            return RedirectToAction(nameof(Index), new { budget });
+        }
+
+        var model = await BuildModelAsync(userId, budget, cancellationToken);
+        var artist = model.Artists.FirstOrDefault(a => a.ArtistId == artistId && a.SuggestedAlbumId == albumId);
+        if (artist == null)
+        {
+            return RedirectToAction(nameof(Index), new { budget });
+        }
+
+        var amazonStoreUrl = await _odesliService.GetAmazonStoreLinkForAlbumAsync(albumId);
+        if (string.IsNullOrWhiteSpace(amazonStoreUrl))
+        {
+            TempData["EthicalMessage"] = "Could not resolve the Amazon store link for that album right now.";
+            return RedirectToAction(nameof(Index), new { budget });
+        }
+
+        return View("PurchaseRedirect", new EthicalPurchaseRedirectViewDto
+        {
+            ArtistName = artist.ArtistName,
+            AlbumName = artist.SuggestedAlbumName ?? "Suggested album",
+            AlbumPrice = artist.SuggestedAlbumPrice,
+            AmazonStoreUrl = amazonStoreUrl,
+            Budget = budget,
+        });
     }
 
     private async Task<EthicalCalculatorViewDto> BuildModelAsync(string userId, decimal monthlyBudget, CancellationToken cancellationToken)
@@ -148,7 +189,7 @@ public class EthicalController(WebAppDbContext context) : Controller
         var artistRows = await _context.Artists
             .AsNoTracking()
             .Where(a => artistIds.Contains(a.Id))
-            .Select(a => new { a.Id, a.ArtistName })
+            .Select(a => new { a.Id, a.ArtistName, a.ItunesArtistId })
             .ToListAsync(cancellationToken);
 
         var ignoredRows = await _context.Set<UserArtistStat>()
@@ -163,6 +204,7 @@ public class EthicalController(WebAppDbContext context) : Controller
 
         var globalByArtist = globalArtistSecondsRows.ToDictionary(x => x.ArtistId, x => x.Seconds);
         var nameByArtist = artistRows.ToDictionary(x => x.Id, x => x.ArtistName);
+        var itunesIdByArtist = artistRows.ToDictionary(x => x.Id, x => x.ItunesArtistId);
         var ignoredByArtist = ignoredRows.ToDictionary(x => x.ArtistId, x => x.IgnoredCount);
 
         const decimal alpha = 0.75m;
@@ -179,7 +221,6 @@ public class EthicalController(WebAppDbContext context) : Controller
                 ? (decimal)(listeningWeight / listeningWeightSum)
                 : 0m;
 
-            // Smooth ignored signal so it grows fast early and saturates later.
             var ignoredShare = ignoredCount > 0
                 ? (decimal)ignoredCount / (ignoredCount + 3m)
                 : 0m;
@@ -188,7 +229,6 @@ public class EthicalController(WebAppDbContext context) : Controller
                 ? (decimal)(Math.Log(1 + globalSeconds) / maxGlobalLog)
                 : 0m;
 
-            // Keep a floor so highly popular artists don't collapse to zero support.
             var inversePopularity = 0.2m + (0.8m * (1m - popularity));
             var listenComponent = alpha * listeningShare * inversePopularity;
             var ignoreComponent = beta * ignoredShare * (1m + inversePopularity);
@@ -197,6 +237,7 @@ public class EthicalController(WebAppDbContext context) : Controller
             var dto = new EthicalArtistScoreDto
             {
                 ArtistId = row.ArtistId,
+                ItunesArtistId = itunesIdByArtist.GetValueOrDefault(row.ArtistId),
                 ArtistName = nameByArtist.GetValueOrDefault(row.ArtistId, "Unknown Artist"),
                 UserListenedSeconds = row.Seconds,
                 GlobalListenedSeconds = globalSeconds,
@@ -222,6 +263,7 @@ public class EthicalController(WebAppDbContext context) : Controller
                 return new EthicalArtistScoreDto
                 {
                     ArtistId = x.dto.ArtistId,
+                    ItunesArtistId = x.dto.ItunesArtistId,
                     ArtistName = x.dto.ArtistName,
                     UserListenedSeconds = x.dto.UserListenedSeconds,
                     GlobalListenedSeconds = x.dto.GlobalListenedSeconds,
@@ -235,6 +277,24 @@ public class EthicalController(WebAppDbContext context) : Controller
             })
             .OrderByDescending(x => x.EthicalScore)
             .ToList();
+
+        // Parallelize album lookups to avoid sequential API calls
+        var albumLookupTasks = withBudget
+            .Select(async artist => new
+            {
+                Artist = artist,
+                Result = await _itunesService.GetBestAlbumAsync(artist.ItunesArtistId, artist.SuggestedBudget)
+            })
+            .ToList();
+
+        var albumResults = await Task.WhenAll(albumLookupTasks);
+
+        foreach (var item in albumResults)
+        {
+            item.Artist.SuggestedAlbumName = item.Result.Name;
+            item.Artist.SuggestedAlbumId = item.Result.Id;
+            item.Artist.SuggestedAlbumPrice = item.Result.Price;
+        }
 
         return new EthicalCalculatorViewDto
         {

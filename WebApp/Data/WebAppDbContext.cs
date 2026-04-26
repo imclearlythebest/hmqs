@@ -1,4 +1,4 @@
-﻿using WebApp.Models;
+using WebApp.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
@@ -14,6 +14,9 @@ namespace WebApp.Data
         public DbSet<UserArtistStat> UserArtistStats => Set<UserArtistStat>();
         public DbSet<Playlist> Playlists => Set<Playlist>();
         public DbSet<PlaylistTrack> PlaylistTracks => Set<PlaylistTrack>();
+        public DbSet<Friendship> Friendships => Set<Friendship>();
+        public DbSet<Blend> Blends => Set<Blend>();
+        public DbSet<BlendMember> BlendMembers => Set<BlendMember>();
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
 
@@ -36,6 +39,32 @@ namespace WebApp.Data
                 .WithMany()
                 .HasForeignKey(pt => pt.TrackId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Friendship>(entity =>
+            {
+                entity.HasOne(f => f.Requester)
+                    .WithMany(u => u.SentFriendRequests)
+                    .HasForeignKey(f => f.RequesterId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(f => f.Receiver)
+                    .WithMany(u => u.ReceivedFriendRequests)
+                    .HasForeignKey(f => f.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<BlendMember>(entity =>
+            {
+                entity.HasKey(bm => new { bm.BlendId, bm.UserId });
+
+                entity.HasOne(bm => bm.Blend)
+                    .WithMany(b => b.Members)
+                    .HasForeignKey(bm => bm.BlendId);
+
+                entity.HasOne(bm => bm.User)
+                    .WithMany(u => u.BlendMemberships)
+                    .HasForeignKey(bm => bm.UserId);
+            });
         }
     }
 }

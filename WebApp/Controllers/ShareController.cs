@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApp.Data;
@@ -24,17 +24,54 @@ public class ShareController(WebAppDbContext context, IHttpClientFactory httpCli
         return await RenderShareView(track, cancellationToken);
     }
 
-    // Share by iTunes Track ID: /Share/ByItunesId/1234567
     [HttpGet]
-    public async Task<IActionResult> ByItunesId(int itunesId, CancellationToken cancellationToken)
+    public async Task<IActionResult> ByItunesId(int id, CancellationToken cancellationToken)
     {
         var track = await _context.Tracks
             .Include(t => t.Artist)
             .Include(t => t.Genre)
-            .FirstOrDefaultAsync(t => t.ItunesTrackId == itunesId, cancellationToken);
+            .FirstOrDefaultAsync(t => t.ItunesTrackId == id, cancellationToken);
 
         if (track == null)
-            return View("NotFound");
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                var url = "https://itunes.apple.com/lookup?id=" + id;
+                using var response = await client.GetAsync(url, cancellationToken);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var jsonDoc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+                    var root = jsonDoc.RootElement;
+                    if (root.TryGetProperty("resultCount", out var count) && count.GetInt32() > 0)
+                    {
+                        var result = root.GetProperty("results")[0];
+                        track = new WebApp.Models.Track
+                        {
+                            ItunesTrackId = id,
+                            TrackName = result.TryGetProperty("trackName", out var tn) ? tn.GetString() ?? "" : "Unknown Track",
+                            Artist = new WebApp.Models.Artist { ArtistName = result.TryGetProperty("artistName", out var an) ? an.GetString() ?? "" : "Unknown Artist" },
+                            ArtworkUrl = result.TryGetProperty("artworkUrl100", out var aw) ? aw.GetString() ?? "" : "",
+                            GenreName = result.TryGetProperty("primaryGenreName", out var gn) ? gn.GetString() ?? "" : "",
+                        };
+                        
+                        if (result.TryGetProperty("releaseDate", out var rd) && DateTime.TryParse(rd.GetString(), out var releaseDate))
+                        {
+                            track.Year = releaseDate.Year;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore iTunes API errors, fall through to null check
+            }
+        }
+
+        if (track == null)
+            return NotFound();
 
         return await RenderShareView(track, cancellationToken);
     }
@@ -113,3 +150,4 @@ public class ShareViewModel
     public string? YoutubeUrl      { get; set; }
     public string? YoutubeMusicUrl { get; set; }
 }
+

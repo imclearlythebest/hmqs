@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     window.hmqsModules = window.hmqsModules || {};
 
     function createPlayerModule(state, getActiveFolder, getMetadataFile) {
@@ -178,6 +178,16 @@
             await submitScrobble(state.currentTrackFileName, progress, elapsed);
         }
 
+        async function resolveFileHandle(dirHandle, path, options = {}) {
+            const parts = path.split('/');
+            const fileName = parts.pop();
+            let curr = dirHandle;
+            for (const part of parts) {
+                curr = await curr.getDirectoryHandle(part);
+            }
+            return await curr.getFileHandle(fileName, options);
+        }
+
         async function playMusicFile(fileName, indexHint = null) {
             const activeFolder = getActiveFolder();
             if (!activeFolder || !activeFolder.handle) {
@@ -185,7 +195,7 @@
             }
 
             try {
-                const fileHandle = await activeFolder.handle.getFileHandle(fileName);
+                const fileHandle = await resolveFileHandle(activeFolder.handle, fileName);
                 const file = await fileHandle.getFile();
                 const fileUrl = URL.createObjectURL(file);
 

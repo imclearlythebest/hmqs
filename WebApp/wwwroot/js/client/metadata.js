@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     window.hmqsModules = window.hmqsModules || {};
 
     function createMetadataModule(getActiveFolder, notifyFolderChanged) {
@@ -215,13 +215,23 @@
             }
         }
 
+        async function resolveFileHandle(dirHandle, path, options = {}) {
+            const parts = path.split('/');
+            const fileName = parts.pop();
+            let curr = dirHandle;
+            for (const part of parts) {
+                curr = await curr.getDirectoryHandle(part);
+            }
+            return await curr.getFileHandle(fileName, options);
+        }
+
         async function createMetadataFile(fileName) {
             const activeFolder = requireActiveFolder();
             const metadataFileName = `${fileName}.hmqsmeta`;
 
             try {
                 await ensureWritePermission(activeFolder.handle);
-                const metadataHandle = await activeFolder.handle.getFileHandle(metadataFileName, { create: true });
+                const metadataHandle = await resolveFileHandle(activeFolder.handle, metadataFileName, { create: true });
                 const writable = await metadataHandle.createWritable();
                 await writable.write(JSON.stringify({}, null, 2));
                 await writable.close();
@@ -236,7 +246,7 @@
             const metadataFileName = `${fileName}.hmqsmeta`;
 
             try {
-                const metadataHandle = await activeFolder.handle.getFileHandle(metadataFileName);
+                const metadataHandle = await resolveFileHandle(activeFolder.handle, metadataFileName);
                 const metadataFile = await metadataHandle.getFile();
                 const text = await metadataFile.text();
                 const metadata = JSON.parse(text);
@@ -255,7 +265,7 @@
 
             try {
                 await ensureWritePermission(activeFolder.handle);
-                const metadataHandle = await activeFolder.handle.getFileHandle(metadataFileName, { create: true });
+                const metadataHandle = await resolveFileHandle(activeFolder.handle, metadataFileName, { create: true });
                 const writable = await metadataHandle.createWritable();
                 await writable.write(JSON.stringify(normalized, null, 2));
                 await writable.close();

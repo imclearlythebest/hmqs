@@ -91,71 +91,86 @@
                 return [];
             }
 
-            const musicExtensions = ['.mp3', '.wav', '.flac', '.m4a', '.ogg', '.aac', '.wma'];
+                        const musicExtensions = ['.mp3', '.wav', '.flac', '.m4a', '.ogg', '.aac', '.wma'];
             const files = [];
 
-            for await (const entry of activeFolder.handle.values()) {
-                if (entry.kind !== 'file') {
-                    continue;
-                }
-
-                const ext = entry.name.substring(entry.name.lastIndexOf('.')).toLowerCase();
-                if (!musicExtensions.includes(ext)) {
-                    continue;
-                }
-
-                const metadataFileName = `${entry.name}.hmqsmeta`;
-                let hasMetadata = false;
-                let canScrobble = false;
-                let itunesTrackId = null;
-                let itunesArtistId = null;
-                let itunesCollectionId = null;
-                let trackTitle = '';
-                let artist = '';
-                let album = '';
-                let imageUrl = '';
-
+            async function scanDirectory(dirHandle, pathPrefix = '') {
+                const entries = [];
                 try {
-                    const metadataEntry = await activeFolder.handle.getFileHandle(metadataFileName);
-                    if (metadataEntry) {
-                        hasMetadata = true;
-                        const metadataFile = await metadataEntry.getFile();
-                        const text = await metadataFile.text();
-                        const metadata = JSON.parse(text);
-                        canScrobble = Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0;
-                        itunesTrackId = Number.isFinite(metadata.itunesTrackId) ? metadata.itunesTrackId : null;
-                        itunesArtistId = Number.isFinite(metadata.itunesArtistId) ? metadata.itunesArtistId : null;
-                        itunesCollectionId = Number.isFinite(metadata.itunesCollectionId) ? metadata.itunesCollectionId : null;
-                        trackTitle = typeof metadata.trackTitle === 'string' ? metadata.trackTitle.trim() : '';
-                        artist = typeof metadata.artist === 'string' ? metadata.artist.trim() : '';
-                        album = typeof metadata.album === 'string' ? metadata.album.trim() : '';
-                        imageUrl = typeof metadata.imageUrl === 'string' ? metadata.imageUrl.trim() : '';
+                    for await (const entry of dirHandle.values()) {
+                        entries.push(entry);
                     }
                 } catch {
-                    hasMetadata = false;
-                    canScrobble = false;
-                    itunesTrackId = null;
-                    itunesArtistId = null;
-                    itunesCollectionId = null;
-                    trackTitle = '';
-                    artist = '';
-                    album = '';
-                    imageUrl = '';
+                    return;
                 }
 
-                files.push({
-                    name: entry.name,
-                    hasMetadata,
-                    canScrobble,
-                    itunesTrackId,
-                    itunesArtistId,
-                    itunesCollectionId,
-                    trackTitle,
-                    artist,
-                    album,
-                    imageUrl
-                });
+                for (const entry of entries) {
+                    if (entry.kind === 'directory') {
+                        await scanDirectory(entry, `${pathPrefix}${entry.name}/`);
+                    } else if (entry.kind === 'file') {
+                        const ext = entry.name.substring(entry.name.lastIndexOf('.')).toLowerCase();
+                        if (!musicExtensions.includes(ext)) {
+                            continue;
+                        }
+
+                        const fileName = `${pathPrefix}${entry.name}`;
+                        const metadataFileName = `${entry.name}.hmqsmeta`;
+                        let hasMetadata = false;
+                        let canScrobble = false;
+                        let itunesTrackId = null;
+                        let itunesArtistId = null;
+                        let itunesCollectionId = null;
+                        let trackTitle = '';
+                        let artist = '';
+                        let album = '';
+                        let imageUrl = '';
+
+                        try {
+                            const metadataEntry = await dirHandle.getFileHandle(metadataFileName);
+                            if (metadataEntry) {
+                                hasMetadata = true;
+                                const metadataFile = await metadataEntry.getFile();
+                                const text = await metadataFile.text();
+                                const metadata = JSON.parse(text);
+                                canScrobble = Number.isFinite(metadata.itunesTrackId) && metadata.itunesTrackId > 0;
+                                itunesTrackId = Number.isFinite(metadata.itunesTrackId) ? metadata.itunesTrackId : null;
+                                itunesArtistId = Number.isFinite(metadata.itunesArtistId) ? metadata.itunesArtistId : null;
+                                itunesCollectionId = Number.isFinite(metadata.itunesCollectionId) ? metadata.itunesCollectionId : null;
+                                trackTitle = typeof metadata.trackTitle === 'string' ? metadata.trackTitle.trim() : '';
+                                artist = typeof metadata.artist === 'string' ? metadata.artist.trim() : '';
+                                album = typeof metadata.album === 'string' ? metadata.album.trim() : '';
+                                imageUrl = typeof metadata.imageUrl === 'string' ? metadata.imageUrl.trim() : '';
+                            }
+                        } catch {
+                            // Missing metadata or unreadable
+                            hasMetadata = false;
+                            canScrobble = false;
+                            itunesTrackId = null;
+                            itunesArtistId = null;
+                            itunesCollectionId = null;
+                            trackTitle = '';
+                            artist = '';
+                            album = '';
+                            imageUrl = '';
+                        }
+
+                        files.push({
+                            name: fileName,
+                            hasMetadata,
+                            canScrobble,
+                            itunesTrackId,
+                            itunesArtistId,
+                            itunesCollectionId,
+                            trackTitle,
+                            artist,
+                            album,
+                            imageUrl
+                        });
+                    }
+                }
             }
+
+            await scanDirectory(activeFolder.handle);
 
             files.sort((a, b) => {
                 const left = (a.trackTitle || a.name || '').toLowerCase();

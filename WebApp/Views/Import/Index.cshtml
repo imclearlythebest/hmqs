@@ -1,0 +1,100 @@
+﻿@using WebApp.Controllers
+@{
+    ViewData["Title"] = "Import from Spotify";
+    var results = ViewBag.Results as ImportResultViewModel;
+}
+
+@section Styles {
+<style>
+  .import-card { max-width: 720px; margin: 0 auto 6rem; }
+  .platform-badge { display:inline-flex; align-items:center; gap:.4rem; font-size:.85rem; }
+  .drop-zone {
+    border: 2px dashed var(--bs-border-color);
+    border-radius: .5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: border-color .2s;
+    cursor: pointer;
+  }
+  .drop-zone:hover { border-color: var(--bs-primary); }
+</style>
+}
+
+<article class="import-card hmqs-panel p-4">
+  <header class="mb-4">
+    <h4 class="mb-1">
+      <i class="fa-brands fa-spotify me-2 text-success"></i>Import from Spotify
+    </h4>
+    <p class="text-body-secondary small mb-0">
+      Upload your Spotify data export files to bring your playlists and listening history into HMQS.
+    </p>
+  </header>
+
+  @if (results != null)
+  {
+    <div class="alert alert-success mb-4">
+      <h6 class="alert-heading mb-2"><i class="fa-solid fa-circle-check me-1"></i>Import Complete</h6>
+      @if (results.ImportedPlaylists.Any())
+      {
+        <p class="mb-1"><strong>Playlists imported:</strong></p>
+        <ul class="mb-2">
+          @foreach (var p in results.ImportedPlaylists)
+          {
+            <li><strong>@p.Name</strong> — @p.Matched track(s) matched, @p.Skipped skipped</li>
+          }
+        </ul>
+      }
+      @if (results.HistoryImported > 0 || results.HistorySkipped > 0)
+      {
+        <p class="mb-0"><strong>Listening history:</strong> @results.HistoryImported imported, @results.HistorySkipped skipped</p>
+      }
+    </div>
+  }
+
+  <div class="alert alert-info mb-4 small">
+    <i class="fa-solid fa-circle-info me-1"></i>
+    <strong>How to get your Spotify data:</strong>
+    Go to Spotify &rarr; Account &rarr; Privacy settings &rarr; <em>Request your data</em>. You'll receive a ZIP with
+    <code>playlist.json</code> and <code>StreamingHistory*.json</code> files.
+  </div>
+
+  <form asp-controller="Import" asp-action="UploadSpotify" method="post" enctype="multipart/form-data">
+    <div class="mb-4">
+      <label for="playlistFile" class="form-label fw-semibold">
+        <i class="fa-solid fa-list me-1"></i>Playlist file <span class="text-body-secondary fw-normal">(playlist.json)</span>
+      </label>
+      <div class="drop-zone" onclick="document.getElementById('playlistFile').click()">
+        <i class="fa-solid fa-file-arrow-up fa-2x mb-2 text-body-secondary"></i>
+        <p class="mb-0 text-body-secondary small">Click to select <code>playlist.json</code></p>
+      </div>
+      <input id="playlistFile" name="playlistFile" type="file" accept=".json" class="d-none"
+             onchange="this.previousElementSibling.querySelector('p').textContent = this.files[0]?.name ?? 'No file selected'" />
+    </div>
+
+    <div class="mb-4">
+      <label for="historyFile" class="form-label fw-semibold">
+        <i class="fa-solid fa-clock-rotate-left me-1"></i>Streaming history <span class="text-body-secondary fw-normal">(StreamingHistory*.json)</span>
+      </label>
+      <div class="drop-zone" onclick="document.getElementById('historyFile').click()">
+        <i class="fa-solid fa-file-arrow-up fa-2x mb-2 text-body-secondary"></i>
+        <p class="mb-0 text-body-secondary small">Click to select <code>StreamingHistory.json</code></p>
+      </div>
+      <input id="historyFile" name="historyFile" type="file" accept=".json" class="d-none"
+             onchange="this.previousElementSibling.querySelector('p').textContent = this.files[0]?.name ?? 'No file selected'" />
+    </div>
+
+    <button type="submit" class="btn btn-success" id="importSubmitBtn">
+      <i class="fa-solid fa-file-import me-1"></i>Import
+    </button>
+  </form>
+</article>
+
+@section Scripts {
+<script>
+  document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('importSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Importing...';
+  });
+</script>
+}

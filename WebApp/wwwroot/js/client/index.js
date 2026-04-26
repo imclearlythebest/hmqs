@@ -1,7 +1,7 @@
 (function () {
     const modules = window.hmqsModules || {};
 
-    if (!modules.db || !modules.createPickerModule || !modules.createMetadataModule || !modules.createPlayerModule || !modules.createPlaylistModule) {
+    if (!modules.db || !modules.createPickerModule || !modules.createMetadataModule || !modules.createPlayerModule || !modules.createPlaylistModule || !modules.createDownloaderModule) {
         console.error('hmqsClient modules are not loaded in the expected order.');
         return;
     }
@@ -26,6 +26,7 @@
     const metadata = modules.createMetadataModule(picker.getActiveFolder, notifyFolderChanged);
     const player = modules.createPlayerModule(state, picker.getActiveFolder, metadata.getMetadataFile);
     const playlist = modules.createPlaylistModule(picker.getActiveFolder, notifyFolderChanged);
+    const downloader = modules.createDownloaderModule(picker.getActiveFolder, metadata.saveMetadataFile, metadata.lookupMetadataCandidatesFromItunes);
 
     function setSelectedPlaylist(name) {
         state.selectedPlaylist = name ? `${name}` : null;
@@ -71,6 +72,7 @@
         toggleLoop: player.toggleLoop,
         getPlaybackState: player.getPlaybackState,
         getCurrentAudio: player.getCurrentAudio,
+        downloadAndSave: downloader.downloadAndSave,
         getFolderVersion: () => state.folderVersion
     };
 })();

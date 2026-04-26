@@ -8,7 +8,7 @@ public class Scrobble
     public int TrackId { get; set; }
     public Track Track { get; set; } = null!;
 
-    public DateTime ScrobbledAt { get; set; } = DateTime.Now;
+    public DateTime ScrobbledAt { get; set; } = DateTime.UtcNow;
     public decimal Progress { get; set; } = 0m;
     public int DurationSeconds { get; set; }
 }

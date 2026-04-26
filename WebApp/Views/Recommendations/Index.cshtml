@@ -49,3 +49,88 @@
     </section>
   </div>
 </div>
+
+@section Scripts {
+  <script>
+    async function refreshRecommendationLibraryState() {
+      if (!window.hmqsClient || !window.hmqsClient.getCurrentFolderFiles) {
+        return;
+      }
+
+      const cards = document.querySelectorAll('[data-recommendation-card]');
+      if (!cards.length) {
+        return;
+      }
+
+      let folderFiles = [];
+      try {
+        folderFiles = await window.hmqsClient.getCurrentFolderFiles();
+      } catch {
+        folderFiles = [];
+      }
+
+      const trackIds = new Set(folderFiles.map(file => Number(file.itunesTrackId)).filter(id => Number.isFinite(id) && id > 0));
+
+      cards.forEach(card => {
+        const trackId = Number(card.dataset.itunesTrackId || 0);
+        const button = card.querySelector('.hmqs-rec-download-btn');
+        const label = card.querySelector('.hmqs-rec-download-label');
+        const badge = card.querySelector('.hmqs-rec-inlib-badge');
+        if (!button || !label) {
+          return;
+        }
+
+        const inLibrary = Number.isFinite(trackId) && trackIds.has(trackId);
+        button.dataset.statusLabel = inLibrary ? 'In library' : 'Download';
+        button.dataset.libraryState = inLibrary ? 'true' : 'false';
+        label.textContent = inLibrary ? 'In library' : 'Download';
+        button.classList.toggle('d-none', inLibrary);
+        badge?.classList.toggle('d-none', !inLibrary);
+      });
+    }
+
+    window.hmqsRecommendationDownload = async function (button) {
+      const trackTitle = button.dataset.trackTitle || '';
+      const artistName = button.dataset.artistName || '';
+      const itunesTrackId = Number(button.dataset.itunesTrackId || 0);
+
+      if (!window.hmqsClient || !window.hmqsClient.downloadAndSave) {
+        alert('Downloader is not available.');
+        return;
+      }
+
+      if (button.dataset.libraryState === 'true') {
+        return;
+      }
+
+      try {
+        const folderFiles = await window.hmqsClient.getCurrentFolderFiles();
+        const trackIds = new Set(folderFiles.map(file => Number(file.itunesTrackId)).filter(id => Number.isFinite(id) && id > 0));
+        if (Number.isFinite(itunesTrackId) && trackIds.has(itunesTrackId)) {
+          await refreshRecommendationLibraryState();
+          return;
+        }
+      } catch {
+      }
+
+      button.disabled = true;
+      try {
+        await window.hmqsClient.downloadAndSave(Number.isFinite(itunesTrackId) ? itunesTrackId : null, {
+          itunesTrackId: Number.isFinite(itunesTrackId) ? itunesTrackId : null,
+          trackTitle,
+          artistName,
+          artist: artistName,
+          imageUrl: button.dataset.imageUrl || '',
+          appleMusicUrl: button.dataset.appleMusicUrl || ''
+        });
+        await refreshRecommendationLibraryState();
+      } finally {
+        button.disabled = false;
+      }
+    };
+
+    document.addEventListener('htmx:afterSwap', refreshRecommendationLibraryState);
+    window.addEventListener('folder-changed', refreshRecommendationLibraryState);
+    window.addEventListener('DOMContentLoaded', refreshRecommendationLibraryState);
+  </script>
+}

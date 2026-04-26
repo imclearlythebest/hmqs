@@ -41,6 +41,7 @@
             try {
                 const metadata = await getMetadataFile(fileName);
                 return {
+                    itunesTrackId: Number.isFinite(metadata?.itunesTrackId) ? metadata.itunesTrackId : null,
                     trackTitle: typeof metadata?.trackTitle === 'string' ? metadata.trackTitle.trim() : '',
                     artist: typeof metadata?.artist === 'string' ? metadata.artist.trim() : '',
                     album: typeof metadata?.album === 'string' ? metadata.album.trim() : '',
@@ -48,6 +49,7 @@
                 };
             } catch {
                 return {
+                    itunesTrackId: null,
                     trackTitle: '',
                     artist: '',
                     album: '',
@@ -221,6 +223,18 @@
                 }));
 
                 state.currentAudio.addEventListener('loadedmetadata', () => {
+                    fetch('/Activity/Notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            itunesTrackId: metadata.itunesTrackId || 0,
+                            trackTitle: metadata.trackTitle || '',
+                            artistName: metadata.artist || '',
+                            artworkUrl: metadata.imageUrl || ''
+                        })
+                    }).catch(() => {});
+
                     window.dispatchEvent(new CustomEvent('track-change', {
                         detail: {
                             fileName,

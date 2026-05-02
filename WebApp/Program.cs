@@ -43,7 +43,7 @@ else
 using (var scope = WebApp.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<WebAppDbContext>();
-    db.Database.EnsureDeleted();
+    // db.Database.EnsureDeleted(); // Removed for production safety
     db.Database.EnsureCreated();
 }
 

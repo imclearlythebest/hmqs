@@ -21,17 +21,5 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-# Install ffmpeg and yt-dlp dependencies
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    python3 \
-    python3-pip \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install yt-dlp
-RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp
-
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "WebApp.dll"]

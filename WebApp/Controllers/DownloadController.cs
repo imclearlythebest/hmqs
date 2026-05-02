@@ -10,52 +10,9 @@ namespace WebApp.Controllers;
 public class DownloadController : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Trigger([FromQuery] string trackTitle, [FromQuery] string? artistName = null)
+    public IActionResult Trigger([FromQuery] string trackTitle, [FromQuery] string? artistName = null)
     {
-        try
-        {
-            var searchQuery = BuildSearchQuery(trackTitle, artistName);
-            if (string.IsNullOrWhiteSpace(searchQuery))
-            {
-                return BadRequest("Track title is required for download.");
-            }
-
-            var ytdl = new YoutubeDL
-            {
-                YoutubeDLPath = ResolveExecutableOnPath("yt-dlp"),
-                FFmpegPath = ResolveExecutableOnPath("ffmpeg"),
-                OutputFolder = Path.GetTempPath()
-            };
-
-            var res = await ytdl.RunAudioDownload(
-                $"ytsearch1:{searchQuery}",
-                AudioConversionFormat.Mp3
-            );
-
-            if (!res.Success)
-            {
-                var errorText = res.ErrorOutput is { Length: > 0 }
-                    ? string.Join(", ", res.ErrorOutput)
-                    : "Unknown downloader error.";
-                return StatusCode(500, $"Download failed: {errorText}");
-            }
-
-            var tempPath = res.Data;
-            if (string.IsNullOrWhiteSpace(tempPath) || !System.IO.File.Exists(tempPath))
-            {
-                return StatusCode(500, "Download finished but no output audio file was produced.");
-            }
-
-            var fileBytes = await System.IO.File.ReadAllBytesAsync(tempPath);
-            System.IO.File.Delete(tempPath);
-
-            var fileName = CreateFileName(trackTitle, artistName);
-            return File(fileBytes, "audio/mpeg", fileName);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
+        return BadRequest("Downloads are currently disabled for legal reasons.");
     }
 
     private static string BuildSearchQuery(string? trackTitle, string? artistName)

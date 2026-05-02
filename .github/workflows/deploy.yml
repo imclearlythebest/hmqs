@@ -1,12 +1,12 @@
-name: Build and Deploy to Azure
+name: Build and Push to Azure Registry
 
 on:
   push:
     branches:
-      - main  # Change this to your default branch name if it's different
+      - main
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -21,18 +21,5 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.AZURE_REGISTRY_URL }}/hmqs-app:${{ github.sha }} .
-          docker push ${{ secrets.AZURE_REGISTRY_URL }}/hmqs-app:${{ github.sha }}
-          docker tag ${{ secrets.AZURE_REGISTRY_URL }}/hmqs-app:${{ github.sha }} ${{ secrets.AZURE_REGISTRY_URL }}/hmqs-app:latest
+          docker build -t ${{ secrets.AZURE_REGISTRY_URL }}/hmqs-app:latest .
           docker push ${{ secrets.AZURE_REGISTRY_URL }}/hmqs-app:latest
-
-      - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: 'hmqs-app' # Replace with your actual Web App name
-          images: '${{ secrets.AZURE_REGISTRY_URL }}/hmqs-app:latest'

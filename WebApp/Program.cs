@@ -17,7 +17,7 @@ builder.Services.AddScoped<WebApp.Services.DiscordService>();
 builder.Services.AddDbContext<WebAppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+        new MySqlServerVersion(new Version(8, 0, 21)) // Hardcoded to avoid AutoDetect timeout
     ));
 builder.Services.AddIdentity<WebAppUser, IdentityRole>()
     .AddEntityFrameworkStores<WebAppDbContext>();
